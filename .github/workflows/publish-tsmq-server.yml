@@ -1,0 +1,249 @@
+name: Publish TSMQ Server
+
+on:
+  push:
+    paths:
+      - 'Directory.Build.props'
+
+jobs:
+  extract-version:
+    name: Extract Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version from Directory.Build.props
+        id: get_version
+        run: |
+          VERSION=$(grep -oP '(?<=<Version>)[^<]+' Directory.Build.props)
+          echo "Detected version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+  docker:
+    name: Build Docker & Export tar (${{ matrix.arch }})
+    needs: extract-version
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+            runtime-id: linux-x64
+            platform: linux/amd64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            runtime-id: linux-arm64
+            platform: linux/arm64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and export Docker image as tar
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: TSMQServer/Dockerfile
+          push: false
+          platforms: ${{ matrix.platform }}
+          tags: tsmq-server:${{ needs.extract-version.outputs.version }}
+          outputs: type=docker,dest=tsmq-server-docker-${{ matrix.arch }}-${{ needs.extract-version.outputs.version }}.tar
+          build-args: |
+            RUNTIME_ID=${{ matrix.runtime-id }}
+
+      - name: Push arch-specific image to ghcr.io
+        run: |
+          docker load -i tsmq-server-docker-${{ matrix.arch }}-${{ needs.extract-version.outputs.version }}.tar
+          docker tag tsmq-server:${{ needs.extract-version.outputs.version }} ghcr.io/${{ github.repository_owner }}/tsmq-server:${{ needs.extract-version.outputs.version }}-${{ matrix.arch }}
+          docker push ghcr.io/${{ github.repository_owner }}/tsmq-server:${{ needs.extract-version.outputs.version }}-${{ matrix.arch }}
+
+      - name: Upload Docker tar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tsmq-server-docker-linux-${{ matrix.arch }}
+          path: tsmq-server-docker-${{ matrix.arch }}-${{ needs.extract-version.outputs.version }}.tar
+          retention-days: 1
+
+  build-win-x64:
+    name: Build Windows x64 AOT
+    needs: extract-version
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build frontend (TSMQWeb)
+        working-directory: TSMQWeb
+        run: |
+          npm install --ignore-scripts
+          npm run build
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish Windows x64 AOT
+        run: |
+          dotnet publish TSMQServer/TSMQServer.App/TSMQServer.App.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            /p:PublishAot=true `
+            /p:DebugType=None `
+            /p:DebugSymbols=false `
+            -o publish/win-x64
+
+      - name: Create archive
+        run: Compress-Archive -Path publish/win-x64/* -DestinationPath tsmq-server-win-x64-${{ needs.extract-version.outputs.version }}.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tsmq-server-win-x64
+          path: tsmq-server-win-x64-${{ needs.extract-version.outputs.version }}.zip
+          retention-days: 1
+
+  build-osx-arm64:
+    name: Build macOS ARM64 AOT
+    needs: extract-version
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build frontend (TSMQWeb)
+        working-directory: TSMQWeb
+        run: |
+          npm install --ignore-scripts
+          npm run build
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish macOS ARM64 AOT
+        run: |
+          dotnet publish TSMQServer/TSMQServer.App/TSMQServer.App.csproj \
+            -c Release \
+            -r osx-arm64 \
+            --self-contained true \
+            /p:PublishAot=true \
+            /p:DebugType=None \
+            /p:DebugSymbols=false \
+            -o publish/osx-arm64
+
+      - name: Create archive
+        run: |
+          cd publish/osx-arm64
+          zip -r ../../tsmq-server-osx-arm64-${{ needs.extract-version.outputs.version }}.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tsmq-server-osx-arm64
+          path: tsmq-server-osx-arm64-${{ needs.extract-version.outputs.version }}.zip
+          retention-days: 1
+
+  docker-manifest:
+    name: Create multi-arch Docker manifest
+    needs: [extract-version, docker]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push multi-arch manifest
+        run: |
+          docker manifest create ghcr.io/${{ github.repository_owner }}/tsmq-server:${{ needs.extract-version.outputs.version }} \
+            ghcr.io/${{ github.repository_owner }}/tsmq-server:${{ needs.extract-version.outputs.version }}-amd64 \
+            ghcr.io/${{ github.repository_owner }}/tsmq-server:${{ needs.extract-version.outputs.version }}-arm64
+          docker manifest push ghcr.io/${{ github.repository_owner }}/tsmq-server:${{ needs.extract-version.outputs.version }}
+          docker manifest create ghcr.io/${{ github.repository_owner }}/tsmq-server:latest \
+            ghcr.io/${{ github.repository_owner }}/tsmq-server:${{ needs.extract-version.outputs.version }}-amd64 \
+            ghcr.io/${{ github.repository_owner }}/tsmq-server:${{ needs.extract-version.outputs.version }}-arm64
+          docker manifest push ghcr.io/${{ github.repository_owner }}/tsmq-server:latest
+
+  create-release:
+    name: Create GitHub Release
+    needs: [extract-version, docker, build-win-x64, build-osx-arm64]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Docker linux-amd64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tsmq-server-docker-linux-amd64
+          path: artifacts
+
+      - name: Download Docker linux-arm64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tsmq-server-docker-linux-arm64
+          path: artifacts
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tsmq-server-win-x64
+          path: artifacts
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tsmq-server-osx-arm64
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: v${{ needs.extract-version.outputs.version }}
+          name: TSMQ Server v${{ needs.extract-version.outputs.version }}
+          body: |
+            ## TSMQ Server v${{ needs.extract-version.outputs.version }}
+
+            全平台发布产物：
+
+            | 文件 | 说明 |
+            |------|------|
+            | `tsmq-server-win-x64-${{ needs.extract-version.outputs.version }}.zip` | Windows x64 AOT 发布包 |
+            | `tsmq-server-osx-arm64-${{ needs.extract-version.outputs.version }}.zip` | macOS ARM64 AOT 发布包 |
+            | `tsmq-server-docker-linux-amd64-${{ needs.extract-version.outputs.version }}.tar` | Docker amd64 镜像 |
+            | `tsmq-server-docker-linux-arm64-${{ needs.extract-version.outputs.version }}.tar` | Docker arm64 镜像 |
+
+            Docker 镜像同时推送至 `ghcr.io/${{ github.repository_owner }}/tsmq-server`。
+          files: artifacts/*
+          draft: false
+          prerelease: false
