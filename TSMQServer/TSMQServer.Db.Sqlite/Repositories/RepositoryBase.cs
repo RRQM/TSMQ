@@ -60,7 +60,7 @@ public abstract class RepositoryBase<[DynamicallyAccessedMembers(DynamicallyAcce
     /// </summary>
     public virtual async Task<bool> UpdateAsync(TEntity entity)
     {
-        return await this.Db.Updateable(entity)
+        return await this.Db.Updatable(entity)
             .ExecuteAsync()
             .ConfigureAwait(false) > 0;
     }

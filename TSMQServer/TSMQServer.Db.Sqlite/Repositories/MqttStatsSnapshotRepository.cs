@@ -54,7 +54,7 @@ public class MqttStatsSnapshotRepository : RepositoryBase<MqttStatsSnapshotEntit
     /// </summary>
     public async Task DeleteBeforeAsync(long beforeTicks)
     {
-        await this.Db.Deleteable<MqttStatsSnapshotEntity>()
+        await this.Db.Deletable<MqttStatsSnapshotEntity>()
             .Where(e => e.SnapshotAtTicks < beforeTicks)
             .ExecuteAsync()
             .ConfigureAwait(false);

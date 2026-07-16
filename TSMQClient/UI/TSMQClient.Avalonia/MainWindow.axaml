@@ -1,4 +1,4 @@
-﻿<Window
+<Window
     x:Class="TSMQClient.Avalonia.MainWindow"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -68,9 +68,9 @@
                         <TextBlock FontSize="13" Foreground="#666666" Text="登录 / 注册" HorizontalAlignment="Center" Margin="0,4,0,12" />
                         <Separator />
                         <TextBlock Classes="label" Text="账号" Margin="0,10,0,0" />
-                        <TextBox Text="{Binding Account}" Watermark="请输入账号" />
+                        <TextBox Text="{Binding Account}" PlaceholderText="请输入账号" />
                         <TextBlock Classes="label" Text="密码" />
-                        <TextBox PasswordChar="●" Text="{Binding Passsword}" Watermark="请输入密码" />
+                        <TextBox PasswordChar="●" Text="{Binding Passsword}" PlaceholderText="请输入密码" />
                         <TextBlock
                             Margin="0,8,0,0"
                             HorizontalAlignment="Center"
@@ -104,9 +104,9 @@
                                 <StackPanel>
                                     <TextBlock Text="修改密码" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
                                     <TextBlock Classes="label" Text="旧密码" />
-                                    <TextBox PasswordChar="●" Text="{Binding OldPassword}" Watermark="旧密码" />
+                                    <TextBox PasswordChar="●" Text="{Binding OldPassword}" PlaceholderText="旧密码" />
                                     <TextBlock Classes="label" Text="新密码" />
-                                    <TextBox PasswordChar="●" Text="{Binding NewPassword}" Watermark="新密码" />
+                                    <TextBox PasswordChar="●" Text="{Binding NewPassword}" PlaceholderText="新密码" />
                                     <Button Classes="primary" HorizontalAlignment="Left" Command="{Binding ChangePasswordCommand}" Content="修改密码" />
                                 </StackPanel>
                             </Border>
@@ -114,7 +114,7 @@
                                 <StackPanel>
                                     <TextBlock Text="删除用户" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
                                     <TextBlock Classes="label" Text="用户ID" />
-                                    <TextBox Text="{Binding DeleteUserId}" Watermark="用户ID" />
+                                    <TextBox Text="{Binding DeleteUserId}" PlaceholderText="用户ID" />
                                     <Button Classes="danger" HorizontalAlignment="Left" Command="{Binding DeleteUserCommand}" Content="删除用户" />
                                 </StackPanel>
                             </Border>
@@ -140,11 +140,11 @@
                                 <StackPanel>
                                     <TextBlock Text="创建角色" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
                                     <TextBlock Classes="label" Text="角色名称" />
-                                    <TextBox Text="{Binding NewRoleName}" Watermark="角色名称" />
+                                    <TextBox Text="{Binding NewRoleName}" PlaceholderText="角色名称" />
                                     <TextBlock Classes="label" Text="角色编码" />
-                                    <TextBox Text="{Binding NewRoleCode}" Watermark="角色编码" />
+                                    <TextBox Text="{Binding NewRoleCode}" PlaceholderText="角色编码" />
                                     <TextBlock Classes="label" Text="描述" />
-                                    <TextBox Text="{Binding NewRoleDescription}" Watermark="描述" />
+                                    <TextBox Text="{Binding NewRoleDescription}" PlaceholderText="描述" />
                                     <Button Classes="primary" HorizontalAlignment="Left" Command="{Binding CreateRoleCommand}" Content="创建角色" />
                                 </StackPanel>
                             </Border>
@@ -152,11 +152,11 @@
                                 <StackPanel>
                                     <TextBlock Text="更新角色" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
                                     <TextBlock Classes="label" Text="角色ID" />
-                                    <TextBox Text="{Binding UpdateRoleId}" Watermark="角色ID" />
+                                    <TextBox Text="{Binding UpdateRoleId}" PlaceholderText="角色ID" />
                                     <TextBlock Classes="label" Text="新名称" />
-                                    <TextBox Text="{Binding UpdateRoleName}" Watermark="新名称" />
+                                    <TextBox Text="{Binding UpdateRoleName}" PlaceholderText="新名称" />
                                     <TextBlock Classes="label" Text="新描述" />
-                                    <TextBox Text="{Binding UpdateRoleDescription}" Watermark="新描述" />
+                                    <TextBox Text="{Binding UpdateRoleDescription}" PlaceholderText="新描述" />
                                     <CheckBox Content="启用" IsChecked="{Binding UpdateRoleIsEnabled}" Margin="0,4,0,4" />
                                     <Button Classes="primary" HorizontalAlignment="Left" Command="{Binding UpdateRoleCommand}" Content="更新角色" />
                                 </StackPanel>
@@ -165,7 +165,7 @@
                                 <StackPanel>
                                     <TextBlock Text="删除角色" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
                                     <TextBlock Classes="label" Text="角色ID" />
-                                    <TextBox Text="{Binding DeleteRoleId}" Watermark="角色ID" />
+                                    <TextBox Text="{Binding DeleteRoleId}" PlaceholderText="角色ID" />
                                     <Button Classes="danger" HorizontalAlignment="Left" Command="{Binding DeleteRoleCommand}" Content="删除角色" />
                                 </StackPanel>
                             </Border>
@@ -173,9 +173,9 @@
                                 <StackPanel>
                                     <TextBlock Text="分配用户角色" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
                                     <TextBlock Classes="label" Text="用户ID" />
-                                    <TextBox Text="{Binding AssignUserId}" Watermark="用户ID" />
+                                    <TextBox Text="{Binding AssignUserId}" PlaceholderText="用户ID" />
                                     <TextBlock Classes="label" Text="角色ID列表（逗号分隔）" />
-                                    <TextBox Text="{Binding AssignRoleIds}" Watermark="1,2,3" />
+                                    <TextBox Text="{Binding AssignRoleIds}" PlaceholderText="1,2,3" />
                                     <Button Classes="primary" HorizontalAlignment="Left" Command="{Binding AssignUserRolesCommand}" Content="分配角色" />
                                 </StackPanel>
                             </Border>
@@ -204,7 +204,7 @@
                                 <StackPanel>
                                     <TextBlock Text="获取指定角色配置" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
                                     <TextBlock Classes="label" Text="目标键 (ClassName.MethodName)" />
-                                    <TextBox Text="{Binding GetRpcTargetKey}" Watermark="ClassName.MethodName" />
+                                    <TextBox Text="{Binding GetRpcTargetKey}" PlaceholderText="ClassName.MethodName" />
                                     <Button Classes="primary" HorizontalAlignment="Left" Command="{Binding GetRpcRolesCommand}" Content="获取" />
                                 </StackPanel>
                             </Border>
@@ -212,11 +212,11 @@
                                 <StackPanel>
                                     <TextBlock Text="设置RPC角色配置" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
                                     <TextBlock Classes="label" Text="目标键" />
-                                    <TextBox Text="{Binding SetRpcTargetKey}" Watermark="目标键" />
+                                    <TextBox Text="{Binding SetRpcTargetKey}" PlaceholderText="目标键" />
                                     <TextBlock Classes="label" Text="角色编码（逗号分隔）" />
-                                    <TextBox Text="{Binding SetRpcRoleCodes}" Watermark="admin,user" />
+                                    <TextBox Text="{Binding SetRpcRoleCodes}" PlaceholderText="admin,user" />
                                     <TextBlock Classes="label" Text="描述（可选）" />
-                                    <TextBox Text="{Binding SetRpcDescription}" Watermark="描述" />
+                                    <TextBox Text="{Binding SetRpcDescription}" PlaceholderText="描述" />
                                     <Button Classes="primary" HorizontalAlignment="Left" Command="{Binding SetRpcRolesCommand}" Content="设置" />
                                 </StackPanel>
                             </Border>
@@ -224,7 +224,7 @@
                                 <StackPanel>
                                     <TextBlock Text="移除RPC角色配置" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
                                     <TextBlock Classes="label" Text="目标键" />
-                                    <TextBox Text="{Binding RemoveRpcTargetKey}" Watermark="目标键" />
+                                    <TextBox Text="{Binding RemoveRpcTargetKey}" PlaceholderText="目标键" />
                                     <Button Classes="danger" HorizontalAlignment="Left" Command="{Binding RemoveRpcRolesCommand}" Content="移除" />
                                 </StackPanel>
                             </Border>
@@ -245,9 +245,9 @@
                                 <TextBlock Grid.Column="0" Grid.Row="0" Classes="label" Text="日志级别" />
                                 <TextBlock Grid.Column="1" Grid.Row="0" Classes="label" Text="分类/模块" />
                                 <TextBlock Grid.Column="2" Grid.Row="0" Classes="label" Text="关键字" />
-                                <TextBox Grid.Column="0" Grid.Row="1" Text="{Binding LogLevel}" Watermark="INFO/WARN/ERROR" Margin="0,0,6,0" />
-                                <TextBox Grid.Column="1" Grid.Row="1" Text="{Binding LogCategory}" Watermark="模块名" Margin="0,0,6,0" />
-                                <TextBox Grid.Column="2" Grid.Row="1" Text="{Binding LogKeyword}" Watermark="关键字" Margin="0,0,6,0" />
+                                <TextBox Grid.Column="0" Grid.Row="1" Text="{Binding LogLevel}" PlaceholderText="INFO/WARN/ERROR" Margin="0,0,6,0" />
+                                <TextBox Grid.Column="1" Grid.Row="1" Text="{Binding LogCategory}" PlaceholderText="模块名" Margin="0,0,6,0" />
+                                <TextBox Grid.Column="2" Grid.Row="1" Text="{Binding LogKeyword}" PlaceholderText="关键字" Margin="0,0,6,0" />
                                 <Button Grid.Column="3" Grid.Row="1" Classes="primary" VerticalAlignment="Bottom" Command="{Binding GetLogListCommand}" Content="查询日志" />
                             </Grid>
                         </StackPanel>

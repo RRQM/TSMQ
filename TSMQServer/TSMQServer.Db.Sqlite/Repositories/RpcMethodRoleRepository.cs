@@ -43,7 +43,7 @@ public class RpcMethodRoleRepository : RepositoryBase<RpcMethodRoleEntity>
     /// </summary>
     public async Task UpsertAsync(RpcMethodRoleEntity entity)
     {
-        await this.Db.Saveable(entity)
+        await this.Db.Savable(entity)
             .ExecuteAsync()
             .ConfigureAwait(false);
     }
@@ -53,7 +53,7 @@ public class RpcMethodRoleRepository : RepositoryBase<RpcMethodRoleEntity>
     /// </summary>
     public async Task<bool> DeleteAsync(string targetKey)
     {
-        return await this.Db.Deleteable<RpcMethodRoleEntity>()
+        return await this.Db.Deletable<RpcMethodRoleEntity>()
             .Where(r => r.TargetKey == targetKey)
             .ExecuteAsync()
             .ConfigureAwait(false) > 0;

@@ -43,7 +43,7 @@ public class MqttAuthUserRepository : RepositoryBase<MqttAuthUserEntity>
     /// </summary>
     public async Task SaveAsync(MqttAuthUserEntity entity)
     {
-        await this.Db.Saveable(entity)
+        await this.Db.Savable(entity)
             .ExecuteAsync()
             .ConfigureAwait(false);
     }
@@ -53,7 +53,7 @@ public class MqttAuthUserRepository : RepositoryBase<MqttAuthUserEntity>
     /// </summary>
     public async Task<bool> DeleteAsync(string userName)
     {
-        return await this.Db.Deleteable<MqttAuthUserEntity>()
+        return await this.Db.Deletable<MqttAuthUserEntity>()
             .Where(u => u.UserName == userName)
             .ExecuteAsync()
             .ConfigureAwait(false) > 0;

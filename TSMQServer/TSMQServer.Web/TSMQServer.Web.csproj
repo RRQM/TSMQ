@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="TouchSocket.Http" Version="4.2.9.6" />
+    <PackageReference Include="TouchSocket.Http" Version="4.2.17" />
   </ItemGroup>
 
   <!-- 可选：在 C# 构建前自动执行前端构建，默认关闭 -->

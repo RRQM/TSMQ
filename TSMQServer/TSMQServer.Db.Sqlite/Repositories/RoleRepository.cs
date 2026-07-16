@@ -64,7 +64,7 @@ public class RoleRepository : RepositoryBase<RoleEntity>
     /// </summary>
     public async Task<bool> DeleteAsync(long id)
     {
-        return await this.Db.Deleteable<RoleEntity>()
+        return await this.Db.Deletable<RoleEntity>()
             .In(id)
             .ExecuteAsync()
             .ConfigureAwait(false) > 0;

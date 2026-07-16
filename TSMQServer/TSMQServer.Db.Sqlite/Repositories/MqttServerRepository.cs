@@ -64,7 +64,7 @@ public class MqttServerRepository : RepositoryBase<MqttServerEntity>
     /// </summary>
     public async Task SaveAsync(MqttServerEntity entity)
     {
-        await this.Db.Saveable(entity)
+        await this.Db.Savable(entity)
             .ExecuteAsync()
             .ConfigureAwait(false);
     }
@@ -74,7 +74,7 @@ public class MqttServerRepository : RepositoryBase<MqttServerEntity>
     /// </summary>
     public async Task<bool> DeleteAsync(string id)
     {
-        return await this.Db.Deleteable<MqttServerEntity>()
+        return await this.Db.Deletable<MqttServerEntity>()
             .Where(s => s.Id == id)
             .ExecuteAsync()
             .ConfigureAwait(false) > 0;

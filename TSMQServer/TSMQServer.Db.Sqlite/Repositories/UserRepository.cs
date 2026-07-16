@@ -54,7 +54,7 @@ public class UserRepository : RepositoryBase<UserEntity>
     /// </summary>
     public async Task<bool> UpdateRoleIdsAsync(long userId, string roleIds)
     {
-        return await this.Db.Updateable<UserEntity>()
+        return await this.Db.Updatable<UserEntity>()
             .SetColumns(u => new UserEntity { RoleIds = roleIds })
             .Where(u => u.Id == userId)
             .ExecuteAsync()
@@ -68,11 +68,11 @@ public class UserRepository : RepositoryBase<UserEntity>
     {
         var affected = await this.Db.UseTranAsync(async () =>
         {
-            await this.Db.Deleteable<LoginSessionEntity>()
+            await this.Db.Deletable<LoginSessionEntity>()
                 .Where(l => l.Account == account)
                 .ExecuteAsync()
                 .ConfigureAwait(false);
-            return await this.Db.Deleteable<UserEntity>()
+            return await this.Db.Deletable<UserEntity>()
                 .Where(u => u.Account == account)
                 .ExecuteAsync()
                 .ConfigureAwait(false);

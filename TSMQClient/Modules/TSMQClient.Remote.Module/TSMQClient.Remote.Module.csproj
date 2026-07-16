@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <ItemGroup>
-        <PackageReference Include="Baboon.Core" Version="1.1.1" />
-        <PackageReference Include="TouchSocket.Hosting" Version="4.2.8" />
-        <PackageReference Include="TouchSocket.JsonRpc" Version="4.2.8" />
+        <PackageReference Include="Baboon.Core" Version="1.2.0" />
+        <PackageReference Include="TouchSocket.Hosting" Version="4.2.17" />
+        <PackageReference Include="TouchSocket.JsonRpc" Version="4.2.17" />
     </ItemGroup>
 
     <ItemGroup>

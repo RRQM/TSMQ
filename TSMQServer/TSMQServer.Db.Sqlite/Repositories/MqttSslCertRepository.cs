@@ -53,7 +53,7 @@ public class MqttSslCertRepository : RepositoryBase<MqttSslCertEntity>
     /// </summary>
     public async Task<bool> DeleteAsync(string id)
     {
-        return await this.Db.Deleteable<MqttSslCertEntity>()
+        return await this.Db.Deletable<MqttSslCertEntity>()
             .Where(c => c.Id == id)
             .ExecuteAsync()
             .ConfigureAwait(false) > 0;

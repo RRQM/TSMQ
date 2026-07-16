@@ -41,7 +41,7 @@ public class BrokerSettingsRepository : RepositoryBase<BrokerSettingsEntity>
     /// </summary>
     public async Task SaveAsync(BrokerSettingsEntity entity)
     {
-        await this.Db.Saveable(entity)
+        await this.Db.Savable(entity)
             .ExecuteAsync()
             .ConfigureAwait(false);
     }

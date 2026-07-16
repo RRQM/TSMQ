@@ -43,7 +43,7 @@ public class LoginSessionRepository : RepositoryBase<LoginSessionEntity>
     /// </summary>
     public async Task<bool> DeleteAsync(string loginedToken)
     {
-        return await this.Db.Deleteable<LoginSessionEntity>()
+        return await this.Db.Deletable<LoginSessionEntity>()
             .Where(l => l.LoginedToken == loginedToken)
             .ExecuteAsync()
             .ConfigureAwait(false) > 0;
@@ -54,7 +54,7 @@ public class LoginSessionRepository : RepositoryBase<LoginSessionEntity>
     /// </summary>
     public async Task<bool> DeleteByAccountAsync(string account)
     {
-        return await this.Db.Deleteable<LoginSessionEntity>()
+        return await this.Db.Deletable<LoginSessionEntity>()
             .Where(l => l.Account == account)
             .ExecuteAsync()
             .ConfigureAwait(false) > 0;
