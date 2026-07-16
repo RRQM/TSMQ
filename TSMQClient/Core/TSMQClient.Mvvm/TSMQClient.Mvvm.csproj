@@ -1,0 +1,11 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Baboon.Core" Version="1.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\TSMQServer\TSMQServer.Core\TSMQServer.Core.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/.Solutions/">
+    <File Path="../Directory.Build.props" />
+  </Folder>
+  <Project Path="TSMQServer.App/TSMQServer.App.csproj" />
+  <Project Path="TSMQServer.Core.Imp/TSMQServer.Core.Imp.csproj" />
+  <Project Path="TSMQServer.Core/TSMQServer.Core.csproj" />
+  <Project Path="TSMQServer.Db.Sqlite/TSMQServer.Db.Sqlite.csproj" />
+  <Project Path="TSMQServer.Db/TSMQServer.Db.csproj" />
+  <Project Path="TSMQServer.Web/TSMQServer.Web.csproj" />
+</Solution>

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<PackageId>TSMQServer.Core</PackageId>
+		<Description>TSMQServer.Core 是 TSMQ 服务端的契约层 NuGet 包，基于 TouchSocket 框架构建。包含所有 RPC 服务接口定义、DTO 模型以及远程调用客户端接口，供客户端项目引用，以实现强类型的远程调用（WebApi / DMTP RPC / WebSocket JsonRpc）。</Description>
+		<PackageTags>TouchSocket;TSMQ;MQTT;RPC;WebApi;DmtpRpc;JsonRpc</PackageTags>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+	</PropertyGroup>
+    
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="TouchSocket.Dmtp" Version="4.2.9.6" />
+		<PackageReference Include="TouchSocket.WebApi" Version="4.2.9.6" />
+		<PackageReference Include="TouchSocket.JsonRpc" Version="4.2.9.6" />
+	</ItemGroup>
+</Project>

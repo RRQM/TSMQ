@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>TSMQServer.Web</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="build\**\*" />
+    <EmbeddedResource Include="build\**\*">
+      <LogicalName>TSMQWeb/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="TouchSocket.Http" Version="4.2.9.6" />
+  </ItemGroup>
+
+  <!-- 可选：在 C# 构建前自动执行前端构建，默认关闭 -->
+  <Target Name="BuildFrontend" BeforeTargets="ReBuild">
+    <Message Text="正在构建前端项目 TSMQWeb..." Importance="high" />
+    <Exec Command="npm run build" WorkingDirectory="..\..\TSMQWeb" />
+  </Target>
+
+</Project>

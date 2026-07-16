@@ -1,0 +1,261 @@
+﻿<Window
+    x:Class="TSMQClient.Avalonia.MainWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:TSMQClient.Mvvm;assembly=TSMQClient.Mvvm"
+    Title="TSMQ Client - IRemoteService 测试"
+    Width="1100"
+    Height="750"
+    d:DesignHeight="750"
+    d:DesignWidth="1100"
+    x:DataType="vm:MainViewModel"
+    WindowStartupLocation="CenterScreen"
+    mc:Ignorable="d">
+
+    <Window.Styles>
+        <Style Selector="TextBox">
+            <Setter Property="Height" Value="28" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Margin" Value="0,2,0,4" />
+        </Style>
+        <Style Selector="Button">
+            <Setter Property="Height" Value="30" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="Margin" Value="0,4,6,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.primary">
+            <Setter Property="Background" Value="#007ACC" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="Button.danger">
+            <Setter Property="Background" Value="#DC3545" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="Button.secondary">
+            <Setter Property="Background" Value="#6C757D" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="TextBlock.label">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="#555555" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+        <Style Selector="TextBox.result">
+            <Setter Property="IsReadOnly" Value="True" />
+            <Setter Property="FontFamily" Value="Consolas,Monospace" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="AcceptsReturn" Value="True" />
+            <Setter Property="Background" Value="#F8F8F8" />
+            <Setter Property="Margin" Value="0" />
+        </Style>
+    </Window.Styles>
+
+    <Grid Background="#EFEFEF">
+        <TabControl Margin="8" Background="White">
+
+            <!--认证-->
+            <TabItem Header="认证">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="20" MaxWidth="420">
+                        <TextBlock FontSize="18" FontWeight="Bold" Foreground="#333333" Text="TSMQ Client" HorizontalAlignment="Center" />
+                        <TextBlock FontSize="13" Foreground="#666666" Text="登录 / 注册" HorizontalAlignment="Center" Margin="0,4,0,12" />
+                        <Separator />
+                        <TextBlock Classes="label" Text="账号" Margin="0,10,0,0" />
+                        <TextBox Text="{Binding Account}" Watermark="请输入账号" />
+                        <TextBlock Classes="label" Text="密码" />
+                        <TextBox PasswordChar="●" Text="{Binding Passsword}" Watermark="请输入密码" />
+                        <TextBlock
+                            Margin="0,8,0,0"
+                            HorizontalAlignment="Center"
+                            FontSize="12"
+                            Foreground="#FF5252"
+                            Text="{Binding StatusMessage}"
+                            TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">
+                            <Button Classes="primary" Width="120" Command="{Binding LoginCommand}" Content="登录" />
+                            <Button Classes="secondary" Width="120" Command="{Binding RegisterCommand}" Content="注册" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!--用户管理-->
+            <TabItem Header="用户管理">
+                <Grid Margin="10" ColumnDefinitions="320,8,*">
+                    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <Border BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="查询" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Classes="primary" Command="{Binding GetUserListCommand}" Content="获取用户列表" />
+                                        <Button Classes="primary" Command="{Binding GetUserInfoCommand}" Content="当前用户信息" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                            <Border BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="修改密码" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
+                                    <TextBlock Classes="label" Text="旧密码" />
+                                    <TextBox PasswordChar="●" Text="{Binding OldPassword}" Watermark="旧密码" />
+                                    <TextBlock Classes="label" Text="新密码" />
+                                    <TextBox PasswordChar="●" Text="{Binding NewPassword}" Watermark="新密码" />
+                                    <Button Classes="primary" HorizontalAlignment="Left" Command="{Binding ChangePasswordCommand}" Content="修改密码" />
+                                </StackPanel>
+                            </Border>
+                            <Border BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="删除用户" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
+                                    <TextBlock Classes="label" Text="用户ID" />
+                                    <TextBox Text="{Binding DeleteUserId}" Watermark="用户ID" />
+                                    <Button Classes="danger" HorizontalAlignment="Left" Command="{Binding DeleteUserCommand}" Content="删除用户" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                    <GridSplitter Grid.Column="1" Width="4" />
+                    <TextBox Grid.Column="2" Classes="result" Text="{Binding UserResult}" VerticalAlignment="Stretch" MinHeight="300" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                </Grid>
+            </TabItem>
+
+            <!--角色管理-->
+            <TabItem Header="角色管理">
+                <Grid Margin="10" ColumnDefinitions="320,8,*">
+                    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <Border BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="查询" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
+                                    <Button Classes="primary" HorizontalAlignment="Left" Command="{Binding GetRoleListCommand}" Content="获取角色列表" />
+                                </StackPanel>
+                            </Border>
+                            <Border BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="创建角色" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
+                                    <TextBlock Classes="label" Text="角色名称" />
+                                    <TextBox Text="{Binding NewRoleName}" Watermark="角色名称" />
+                                    <TextBlock Classes="label" Text="角色编码" />
+                                    <TextBox Text="{Binding NewRoleCode}" Watermark="角色编码" />
+                                    <TextBlock Classes="label" Text="描述" />
+                                    <TextBox Text="{Binding NewRoleDescription}" Watermark="描述" />
+                                    <Button Classes="primary" HorizontalAlignment="Left" Command="{Binding CreateRoleCommand}" Content="创建角色" />
+                                </StackPanel>
+                            </Border>
+                            <Border BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="更新角色" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
+                                    <TextBlock Classes="label" Text="角色ID" />
+                                    <TextBox Text="{Binding UpdateRoleId}" Watermark="角色ID" />
+                                    <TextBlock Classes="label" Text="新名称" />
+                                    <TextBox Text="{Binding UpdateRoleName}" Watermark="新名称" />
+                                    <TextBlock Classes="label" Text="新描述" />
+                                    <TextBox Text="{Binding UpdateRoleDescription}" Watermark="新描述" />
+                                    <CheckBox Content="启用" IsChecked="{Binding UpdateRoleIsEnabled}" Margin="0,4,0,4" />
+                                    <Button Classes="primary" HorizontalAlignment="Left" Command="{Binding UpdateRoleCommand}" Content="更新角色" />
+                                </StackPanel>
+                            </Border>
+                            <Border BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="删除角色" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
+                                    <TextBlock Classes="label" Text="角色ID" />
+                                    <TextBox Text="{Binding DeleteRoleId}" Watermark="角色ID" />
+                                    <Button Classes="danger" HorizontalAlignment="Left" Command="{Binding DeleteRoleCommand}" Content="删除角色" />
+                                </StackPanel>
+                            </Border>
+                            <Border BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="分配用户角色" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
+                                    <TextBlock Classes="label" Text="用户ID" />
+                                    <TextBox Text="{Binding AssignUserId}" Watermark="用户ID" />
+                                    <TextBlock Classes="label" Text="角色ID列表（逗号分隔）" />
+                                    <TextBox Text="{Binding AssignRoleIds}" Watermark="1,2,3" />
+                                    <Button Classes="primary" HorizontalAlignment="Left" Command="{Binding AssignUserRolesCommand}" Content="分配角色" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                    <GridSplitter Grid.Column="1" Width="4" />
+                    <TextBox Grid.Column="2" Classes="result" Text="{Binding RoleResult}" VerticalAlignment="Stretch" MinHeight="300" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                </Grid>
+            </TabItem>
+
+            <!--RPC授权-->
+            <TabItem Header="RPC授权">
+                <Grid Margin="10" ColumnDefinitions="340,8,*">
+                    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <Border BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="全量查询" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Classes="primary" Command="{Binding GetAllRpcRolesCommand}" Content="所有RPC角色配置" />
+                                        <Button Classes="primary" Command="{Binding GetAllRpcMethodsCommand}" Content="所有RPC方法" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                            <Border BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="获取指定角色配置" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
+                                    <TextBlock Classes="label" Text="目标键 (ClassName.MethodName)" />
+                                    <TextBox Text="{Binding GetRpcTargetKey}" Watermark="ClassName.MethodName" />
+                                    <Button Classes="primary" HorizontalAlignment="Left" Command="{Binding GetRpcRolesCommand}" Content="获取" />
+                                </StackPanel>
+                            </Border>
+                            <Border BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="设置RPC角色配置" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
+                                    <TextBlock Classes="label" Text="目标键" />
+                                    <TextBox Text="{Binding SetRpcTargetKey}" Watermark="目标键" />
+                                    <TextBlock Classes="label" Text="角色编码（逗号分隔）" />
+                                    <TextBox Text="{Binding SetRpcRoleCodes}" Watermark="admin,user" />
+                                    <TextBlock Classes="label" Text="描述（可选）" />
+                                    <TextBox Text="{Binding SetRpcDescription}" Watermark="描述" />
+                                    <Button Classes="primary" HorizontalAlignment="Left" Command="{Binding SetRpcRolesCommand}" Content="设置" />
+                                </StackPanel>
+                            </Border>
+                            <Border BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="移除RPC角色配置" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
+                                    <TextBlock Classes="label" Text="目标键" />
+                                    <TextBox Text="{Binding RemoveRpcTargetKey}" Watermark="目标键" />
+                                    <Button Classes="danger" HorizontalAlignment="Left" Command="{Binding RemoveRpcRolesCommand}" Content="移除" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                    <GridSplitter Grid.Column="1" Width="4" />
+                    <TextBox Grid.Column="2" Classes="result" Text="{Binding RpcResult}" VerticalAlignment="Stretch" MinHeight="300" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                </Grid>
+            </TabItem>
+
+            <!--日志管理-->
+            <TabItem Header="日志管理">
+                <Grid Margin="10" RowDefinitions="Auto,*">
+                    <Border Grid.Row="0" BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                        <StackPanel>
+                            <TextBlock Text="筛选条件" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
+                            <Grid ColumnDefinitions="*,*,*,Auto" RowDefinitions="Auto,Auto">
+                                <TextBlock Grid.Column="0" Grid.Row="0" Classes="label" Text="日志级别" />
+                                <TextBlock Grid.Column="1" Grid.Row="0" Classes="label" Text="分类/模块" />
+                                <TextBlock Grid.Column="2" Grid.Row="0" Classes="label" Text="关键字" />
+                                <TextBox Grid.Column="0" Grid.Row="1" Text="{Binding LogLevel}" Watermark="INFO/WARN/ERROR" Margin="0,0,6,0" />
+                                <TextBox Grid.Column="1" Grid.Row="1" Text="{Binding LogCategory}" Watermark="模块名" Margin="0,0,6,0" />
+                                <TextBox Grid.Column="2" Grid.Row="1" Text="{Binding LogKeyword}" Watermark="关键字" Margin="0,0,6,0" />
+                                <Button Grid.Column="3" Grid.Row="1" Classes="primary" VerticalAlignment="Bottom" Command="{Binding GetLogListCommand}" Content="查询日志" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                    <TextBox Grid.Row="1" Classes="result" Text="{Binding LogResult}" VerticalAlignment="Stretch" MinHeight="300" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                </Grid>
+            </TabItem>
+
+        </TabControl>
+    </Grid>
+</Window>

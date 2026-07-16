@@ -1,0 +1,9 @@
+TSMQServer/Build/
+TSMQServer/.vs/
+TSMQServer/**/.vs/
+TSMQServer/**/bin/
+TSMQServer/**/obj/
+TSMQServer/**/*.user
+TSMQWeb/node_modules/
+TSMQWeb/dist/
+TSMQClient/

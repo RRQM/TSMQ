@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/.Solutions/">
+    <File Path="../Directory.Build.props" />
+  </Folder>
+  <Folder Name="/Core/">
+    <Project Path="Core/TSMQClient.Mvvm/TSMQClient.Mvvm.csproj" />
+  </Folder>
+  <Folder Name="/Modules/">
+    <Project Path="Modules/TSMQClient.Remote.Module/TSMQClient.Remote.Module.csproj" />
+  </Folder>
+  <Folder Name="/Ref/">
+    <Project Path="../TSMQServer/TSMQServer.Core/TSMQServer.Core.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/TSMQClient.Remote.Module.Tests/TSMQClient.Remote.Module.Tests.csproj" />
+  </Folder>
+  <Folder Name="/UI/">
+    <Project Path="UI/TSMQClient.Avalonia/TSMQClient.Avalonia.csproj" />
+  </Folder>
+</Solution>
