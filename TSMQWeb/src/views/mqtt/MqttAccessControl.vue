@@ -1,41 +1,27 @@
 <template>
-  <el-card v-loading="loading">
-    <template #header><div class="actions"><span>MQTT 访问控制</span><el-button v-permission="'MqttAccessService.SetMqttAccessPolicy'" type="primary" :loading="saving" @click="save">保存策略</el-button></div></template>
-    <el-alert title="保存策略会断开现有 MQTT 客户端并清除旧订阅，客户端需重新连接和订阅。" type="warning" :closable="false" />
-    <el-form label-width="150px" class="settings">
-      <el-form-item label="验证账号密码"><el-switch v-model="policy.AuthenticationEnabled" /><span class="hint">开启后仅允许连接授权用户登录</span></el-form-item>
-      <el-form-item label="启用主题 ACL"><el-switch v-model="policy.AclEnabled" /><span class="hint">拒绝规则优先；未匹配允许规则则拒绝</span></el-form-item>
-      <el-form-item label="采集消息内容"><el-switch v-model="policy.CapturePayload" /><span class="hint">诊断页可查看最近消息内容，每条最多 4 KiB</span></el-form-item>
-    </el-form>
-    <div class="actions"><span>主题规则（用户名和客户端 ID 留空表示全部）</span><el-button v-permission="'MqttAccessService.SetMqttAccessPolicy'" @click="addRule">添加规则</el-button></div>
-    <el-table :data="policy.Rules" border class="rules">
-      <el-table-column label="用户名" min-width="130"><template #default="{ row }"><el-input v-model="row.UserName" placeholder="所有用户" /></template></el-table-column>
-      <el-table-column label="客户端 ID" min-width="140"><template #default="{ row }"><el-input v-model="row.ClientId" placeholder="所有客户端" /></template></el-table-column>
-      <el-table-column label="主题过滤器" min-width="190"><template #default="{ row }"><el-input v-model="row.TopicFilter" placeholder="devices/+/telemetry" /></template></el-table-column>
-      <el-table-column label="操作" width="140"><template #default="{ row }"><el-select v-model="row.Action"><el-option label="发布和订阅" value="Both" /><el-option label="发布" value="Publish" /><el-option label="订阅" value="Subscribe" /></el-select></template></el-table-column>
-      <el-table-column label="结果" width="110"><template #default="{ row }"><el-switch v-model="row.Allow" inline-prompt active-text="允许" inactive-text="拒绝" /></template></el-table-column>
-      <el-table-column width="80"><template #default="{ $index }"><el-button v-permission="'MqttAccessService.SetMqttAccessPolicy'" link type="danger" @click="policy.Rules.splice($index, 1)">删除</el-button></template></el-table-column>
-    </el-table>
-    <el-alert class="rules" type="info" :closable="false" title="支持 + 和 #。订阅范围必须完整包含在允许规则中，不能与拒绝规则重叠。暂不支持 $share 共享订阅。" />
-    <el-divider>测试已保存策略</el-divider>
-    <el-form inline>
-      <el-form-item label="用户名"><el-input v-model="testForm.UserName" /></el-form-item>
-      <el-form-item label="客户端 ID"><el-input v-model="testForm.ClientId" /></el-form-item>
-      <el-form-item label="主题"><el-input v-model="testForm.Topic" /></el-form-item>
-      <el-form-item><el-select v-model="testForm.Action" style="width: 100px"><el-option label="发布" value="Publish" /><el-option label="订阅" value="Subscribe" /></el-select></el-form-item>
-      <el-form-item><el-button v-permission="'MqttAccessService.TestMqttAccess'" :loading="testing" @click="test">测试</el-button></el-form-item>
-      <el-form-item v-if="testResult !== null"><el-tag :type="testResult ? 'success' : 'danger'">{{ testResult ? '允许' : '拒绝' }}</el-tag></el-form-item>
-    </el-form>
-  </el-card>
+  <div class="access-page" v-loading="loading">
+    <div class="access-switches"><article v-for="setting in settings" :key="setting.key" class="access-setting"><div class="setting-top"><span class="setting-icon" :class="setting.color"><el-icon><component :is="setting.icon" /></el-icon></span><el-switch v-model="policy[setting.key]" :disabled="!canSave" /></div><h3>{{ t(setting.title) }}</h3><p>{{ t(setting.description) }}</p><span class="setting-state" :class="{ enabled: policy[setting.key] }"><span class="status-dot" />{{ policy[setting.key] ? t('已启用') : t('未启用') }}</span></article></div>
+    <el-card class="access-rules"><template #header><div class="actions"><div class="section-title"><el-icon><Key /></el-icon><span>{{ t('主题访问规则') }}</span><span class="count-badge">{{ policy.Rules.length }}</span></div><el-button v-permission="'MqttAccessService.SetMqttAccessPolicy'" @click="addRule"><el-icon><Plus /></el-icon>{{ t('添加规则') }}</el-button></div></template><el-alert type="info" :closable="false" :title="t('拒绝规则优先；未匹配允许规则则拒绝。用户名或客户端 ID 留空表示匹配全部。')" /><el-table :data="policy.Rules" class="rules-table" :empty-text="t('暂无规则，添加第一条主题访问规则。')"><el-table-column type="index" label="#" width="45" /><el-table-column :label="t('用户名')" min-width="145"><template #default="{ row }"><el-input v-model="row.UserName" :placeholder="t('所有用户')" :disabled="!canSave" /></template></el-table-column><el-table-column :label="t('客户端 ID')" min-width="150"><template #default="{ row }"><el-input v-model="row.ClientId" :placeholder="t('所有客户端')" :disabled="!canSave" /></template></el-table-column><el-table-column :label="t('主题过滤器')" min-width="220"><template #default="{ row }"><el-input v-model="row.TopicFilter" placeholder="devices/+/telemetry" :disabled="!canSave" class="mono" /></template></el-table-column><el-table-column :label="t('操作')" width="150"><template #default="{ row }"><el-select v-model="row.Action" :disabled="!canSave"><el-option :label="t('发布和订阅')" value="Both" /><el-option :label="t('发布')" value="Publish" /><el-option :label="t('订阅')" value="Subscribe" /></el-select></template></el-table-column><el-table-column :label="t('结果')" width="130"><template #default="{ row }"><el-select v-model="row.Allow" :disabled="!canSave"><el-option :label="t('允许')" :value="true" /><el-option :label="t('拒绝')" :value="false" /></el-select></template></el-table-column><el-table-column width="60" fixed="right"><template #default="{ $index }"><button v-permission="'MqttAccessService.SetMqttAccessPolicy'" class="icon-button remove-rule" :aria-label="t('删除')" @click="policy.Rules.splice($index,1)"><el-icon><Delete /></el-icon></button></template></el-table-column></el-table><div class="rule-guidance"><code>+</code><span>{{ t('匹配单层主题') }}</span><code>#</code><span>{{ t('匹配多层主题') }}</span><span class="rule-guidance-right">{{ t('暂不支持 $share 共享订阅') }}</span></div><div class="policy-save-bar"><span><el-icon><Warning /></el-icon>{{ t('保存将断开现有连接并清除订阅，客户端需重新连接。') }}</span><el-button v-permission="'MqttAccessService.SetMqttAccessPolicy'" type="primary" :loading="saving" @click="save"><el-icon><Check /></el-icon>{{ t('保存策略') }}</el-button></div></el-card>
+    <el-card class="access-tester"><template #header><div class="section-title"><el-icon><Aim /></el-icon><span>{{ t('测试已保存策略') }}</span><span class="tester-badge">POLICY SANDBOX</span></div></template><p class="tester-description">{{ t('验证某个设备能否发布或订阅指定主题，不会发送真实消息。') }}</p><el-form label-position="top" @submit.prevent="test" class="tester-form"><el-form-item :label="t('用户名')"><el-input v-model="testForm.UserName" placeholder="device-user" /></el-form-item><el-form-item :label="t('客户端 ID')"><el-input v-model="testForm.ClientId" placeholder="device-001" /></el-form-item><el-form-item :label="t('主题')"><el-input v-model="testForm.Topic" placeholder="devices/001/telemetry" /></el-form-item><el-form-item :label="t('操作')"><el-select v-model="testForm.Action"><el-option :label="t('发布')" value="Publish" /><el-option :label="t('订阅')" value="Subscribe" /></el-select></el-form-item><el-form-item><el-button v-permission="'MqttAccessService.TestMqttAccess'" :loading="testing" native-type="submit"><el-icon><VideoPlay /></el-icon>{{ t('测试') }}</el-button></el-form-item></el-form><Transition name="page"><div v-if="testResult !== null" class="test-result" :class="{ denied: !testResult }"><el-icon><CircleCheck v-if="testResult" /><CircleClose v-else /></el-icon><strong>{{ testResult ? t('允许访问') : t('访问被拒绝') }}</strong><span>{{ testForm.Topic }}</span></div></Transition></el-card>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { t, useLocale } from '@/locales'
+const { locale } = useLocale()
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useUserStore } from '@/stores/user'
 import { mqttAccessApi, type AccessPolicy } from '@/api/mqtt-access'
 const loading = ref(false), saving = ref(false), testing = ref(false)
 const policy = reactive<AccessPolicy>({ AuthenticationEnabled: true, AclEnabled: false, CapturePayload: false, Rules: [] })
 const testForm = reactive({ UserName: '', ClientId: '', Topic: '', Action: 'Publish' })
+const canSave = computed(() => useUserStore().hasPermission('MqttAccessService.SetMqttAccessPolicy'))
+const settings: { key: 'AuthenticationEnabled' | 'AclEnabled' | 'CapturePayload'; icon: string; title: string; description: string; color: string }[] = [
+  { key: 'AuthenticationEnabled', icon: 'Lock', title: '连接认证', description: '验证设备账号与密码，仅允许已授权的设备接入。', color: 'purple' },
+  { key: 'AclEnabled', icon: 'Key', title: '主题访问控制', description: '精确控制设备可发布与订阅的主题，拒绝规则优先。', color: 'mint' },
+  { key: 'CapturePayload', icon: 'Document', title: '消息内容采集', description: '为排障保留最近消息内容，每条最多记录 4 KiB。', color: 'amber' }
+]
 const testResult = ref<boolean | null>(null)
 onMounted(async () => {
   loading.value = true
@@ -44,7 +30,7 @@ onMounted(async () => {
 })
 function addRule() { policy.Rules.push({ UserName: '', ClientId: '', TopicFilter: '', Action: 'Both', Allow: true }) }
 async function save() {
-  try { await ElMessageBox.confirm('保存后现有 MQTT 连接将断开，是否继续？', '更新访问策略', { type: 'warning' }) } catch { return }
+  try { await ElMessageBox.confirm(t("保存后现有 MQTT 连接将断开，是否继续？"), t("更新访问策略"), {confirmButtonText: t('确定'), cancelButtonText: t('取消'),  type: 'warning' }) } catch { return }
   saving.value = true
   try { ElMessage.success((await mqttAccessApi.savePolicy(policy)).Message); testResult.value = null } catch { /* 请求层展示错误 */ }
   finally { saving.value = false }
@@ -57,7 +43,6 @@ async function test() {
 </script>
 
 <style scoped>
-.actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.settings, .rules { margin-top: 20px; }
-.hint { margin-left: 12px; color: var(--el-text-color-secondary); }
+.access-switches { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-bottom:23px; } .access-setting { padding:23px;background:var(--surface);border:1px solid var(--line);border-radius:12px;animation:reveal .4s both; } .setting-top { display:flex;justify-content:space-between;align-items:center; } .setting-icon { width:39px;height:39px;border-radius:11px;display:grid;place-items:center;font-size:21px; } .setting-icon.purple { color:var(--accent);background:var(--accent-soft); } .setting-icon.mint { color:var(--mint);background:var(--mint-soft); } .setting-icon.amber { color:#d5a458;background:color-mix(in srgb,#d5a458 10%,var(--surface)); } .access-setting h3 { font-size:13px;font-weight:600;margin-top:20px; } .access-setting p { font-size:10px;color:var(--muted);line-height:1.9;margin-top:9px;min-height:38px; } .setting-state { font-size:9px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-top:15px; } .setting-state .status-dot { background:var(--muted);width:5px;height:5px; } .setting-state.enabled { color:var(--mint); } .setting-state.enabled .status-dot { background:var(--mint); } .actions { display:flex;justify-content:space-between;align-items:center;gap:12px; } .section-title { display:flex;align-items:center;gap:9px; } .section-title > .el-icon { color:var(--accent);font-size:17px; } .rules-table { margin-top:20px; } .rules-table :deep(td.el-table__cell) { height:65px; } .remove-rule:hover { color:var(--danger); } .rule-guidance { display:flex;align-items:center;gap:8px;padding:18px 0;font-size:10px;color:var(--muted);flex-wrap:wrap; } .rule-guidance code { background:var(--accent-soft);color:var(--accent);padding:3px 6px;border-radius:4px; } .rule-guidance-right { margin-left:auto; } .policy-save-bar { display:flex;align-items:center;justify-content:space-between;gap:20px;border-top:1px solid var(--line);padding-top:20px; } .policy-save-bar > span { display:flex;gap:7px;align-items:center;color:var(--muted);font-size:10px;line-height:1.8; } .policy-save-bar > span .el-icon { color:var(--el-color-warning);font-size:15px;flex-shrink:0; } .access-tester { margin-top:23px; } .tester-badge { font-size:8px;font-weight:400;color:var(--muted);letter-spacing:1px;margin-left:auto; } .tester-description { font-size:11px;color:var(--muted);margin-bottom:21px;line-height:1.8; } .tester-form { display:grid;grid-template-columns:1fr 1fr 1.4fr .65fr auto;gap:15px;align-items:end; } .tester-form :deep(.el-form-item) { margin-bottom:0; } .test-result { display:flex;align-items:center;gap:10px;background:var(--mint-soft);color:var(--mint);border-radius:8px;padding:15px;margin-top:22px;font-size:12px; } .test-result.denied { background:var(--el-color-danger-light-9);color:var(--danger); } .test-result span { margin-left:auto;font-size:10px;font-family:Consolas,monospace; }
+@media(max-width:1000px) { .tester-form { grid-template-columns:1fr 1fr; } .access-switches { gap:12px; } .access-setting { padding:17px; } } @media(max-width:600px) { .access-switches { grid-template-columns:1fr; } .access-setting { display:grid;grid-template-columns:1fr auto;gap:0 12px; } .setting-top { grid-column:2;grid-row:1/4;gap:18px; } .setting-icon { display:none; } .access-setting h3 { margin-top:0; } .access-setting p { min-height:0; } .setting-state { margin-top:7px; } .tester-form { grid-template-columns:1fr; } .policy-save-bar { flex-direction:column;align-items:stretch; } }
 </style>

@@ -13,7 +13,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     component: () => import('@/layout/MainLayout.vue'),
-    redirect: '/account',
+    redirect: '/dashboard',
     meta: { requiresAuth: true },
     children: [
       { path: 'account', name: 'Account', component: () => import('@/views/Account.vue'), meta: { title: '当前账号', icon: 'User' } },
@@ -23,7 +23,7 @@ const routes: RouteRecordRaw[] = [
         path: 'dashboard',
         name: 'Dashboard',
         component: () => import('@/views/Dashboard.vue'),
-        meta: { title: '首页', permission: 'MqttServerManagerService.GetMqttDashboardStats', icon: 'House' }
+        meta: { title: '统计概览', permission: 'MqttServerManagerService.GetMqttDashboardStats', icon: 'DataAnalysis' }
       },
       {
         path: 'users',

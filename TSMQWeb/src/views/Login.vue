@@ -1,104 +1,28 @@
 <template>
-  <div class="login-container">
-    <el-card class="login-card">
-      <template #header>
-        <div class="card-header">
-          <h2>TSMQ权限管理系统</h2>
-        </div>
-      </template>
-
-      <el-form :model="form" :rules="rules" ref="formRef" label-width="0">
-        <el-form-item prop="Account">
-          <el-input v-model="form.Account" placeholder="账号" prefix-icon="User" size="large" />
-        </el-form-item>
-
-        <el-form-item prop="Password">
-          <el-input
-            v-model="form.Password"
-            type="password"
-            placeholder="密码"
-            prefix-icon="Lock"
-            size="large"
-            @keyup.enter="handleLogin"
-          />
-        </el-form-item>
-
-        <el-form-item>
-          <el-button type="primary" size="large" style="width: 100%" :loading="loading" @click="handleLogin">
-            登录
-          </el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
+  <div class="login-page">
+    <section class="login-story"><router-link to="/" class="brand"><ConsoleLogo /><span class="brand-word">TSMQ<span>CONSOLE</span></span></router-link><div class="login-story-copy"><span class="story-badge"><span class="status-dot" />{{ t('为每一次连接而构建') }}</span><h1>{{ t('连接万物。') }}<br /><span>{{ t('看见每一条消息。') }}</span></h1><p>{{ t('一个清晰、可靠的消息工作空间。从设备接入到消息洞察，让复杂系统尽在掌握。') }}</p><div class="login-network" aria-hidden="true"><div class="orbit orbit-one" /><div class="orbit orbit-two" /><div class="orbit orbit-three" /><span class="network-core"><ConsoleLogo /></span><span class="orbit-node node-one"><el-icon><Monitor /></el-icon></span><span class="orbit-node node-two"><el-icon><Connection /></el-icon></span><span class="orbit-node node-three"><el-icon><Share /></el-icon></span><span class="orbit-node node-four"><el-icon><MessageBox /></el-icon></span><span class="network-label label-one">TCP</span><span class="network-label label-two">WebSocket</span><span class="network-label label-three">MQTT</span></div><div class="story-features"><span><el-icon><Lock /></el-icon>{{ t('精细访问控制') }}</span><span><el-icon><DataAnalysis /></el-icon>{{ t('实时数据洞察') }}</span><span><el-icon><Connection /></el-icon>{{ t('多协议互通') }}</span></div></div><div class="story-footer">TSMQ <span>MESSAGING, SIMPLIFIED.</span></div></section>
+    <section class="login-form-side"><div class="login-preferences"><PreferenceControls /></div><div class="login-form-wrap"><span class="login-kicker">YOUR MESSAGING WORKSPACE</span><h2>{{ t('欢迎回来') }}<span class="greeting-dot">.</span></h2><p class="login-subtitle">{{ t('登录控制台，继续探索你的消息网络。') }}</p><el-form :model="form" :rules="rules" ref="formRef" label-position="top" @submit.prevent="handleLogin"><el-form-item prop="Account" :label="t('账号')"><el-input v-model="form.Account" :placeholder="t('请输入账号')" prefix-icon="User" size="large" autocomplete="username" /></el-form-item><el-form-item prop="Password" :label="t('密码')"><el-input v-model="form.Password" type="password" :placeholder="t('请输入密码')" prefix-icon="Lock" size="large" autocomplete="current-password" show-password /></el-form-item><div class="login-security"><el-icon><Lock /></el-icon>{{ t('使用你的管理账号安全登录') }}</div><el-button type="primary" size="large" class="login-submit" :loading="loading" native-type="submit">{{ t('登录工作空间') }}<el-icon><Right /></el-icon></el-button></el-form><div class="login-help"><span>{{ t('设备连接使用独立的 MQTT 凭据。') }}</span><span>{{ t('如需访问权限，请联系工作空间管理员。') }}</span></div></div><div class="login-copyright">© {{ new Date().getFullYear() }} TSMQ <span>·</span> {{ t('让消息流动，让系统可见。') }}</div></section>
   </div>
 </template>
-
-<script setup>
-import { ref } from 'vue'
+<script setup lang="ts">
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import type { FormInstance } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-import logger from '@/utils/logger'
-
-logger.info('Login', '登录页面加载')
-
-const router = useRouter()
-const userStore = useUserStore()
-const formRef = ref(null)
-const loading = ref(false)
-
-const form = ref({
-  Account: '',
-  Password: ''
-})
-
-const rules = {
-  Account: [{ required: true, message: '请输入账号', trigger: 'blur' }],
-  Password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
-}
-
-const handleLogin = async () => {
-  if (!formRef.value) return
-
-  await formRef.value.validate(async valid => {
-    if (valid) {
-      loading.value = true
-      logger.info('Login', '用户尝试登录', { account: form.value.Account })
-      try {
-        await userStore.login(form.value)
-        ElMessage.success('登录成功')
-        logger.info('Login', '登录成功，跳转到首页', { account: form.value.Account })
-        router.push('/')
-      } catch (error) {
-        logger.error('Login', '登录失败', error)
-        ElMessage.error(error.message || '登录失败')
-      } finally {
-        loading.value = false
-      }
-    }
-  })
+import { t } from '@/locales'
+import ConsoleLogo from '@/components/ConsoleLogo.vue'
+import PreferenceControls from '@/components/PreferenceControls.vue'
+const router = useRouter(), store = useUserStore(), formRef = ref<FormInstance>(), loading = ref(false)
+const form = ref({ Account: '', Password: '' })
+const rules = computed(() => ({ Account: [{ required: true, message: t('请输入账号'), trigger: 'blur' }], Password: [{ required: true, message: t('请输入密码'), trigger: 'blur' }] }))
+async function handleLogin() {
+  if (loading.value || !await formRef.value?.validate().catch(() => false)) return
+  loading.value = true
+  try { await store.login(form.value); router.push('/') } catch { /* 请求层显示错误。 */ } finally { loading.value = false }
 }
 </script>
-
 <style scoped>
-.login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.login-card {
-  width: 400px;
-}
-
-.card-header {
-  text-align: center;
-}
-
-.card-header h2 {
-  margin: 0;
-  color: #409eff;
-}
+.login-page { min-height: 100vh; display: grid; grid-template-columns: 1.05fr 1fr; } .login-story { padding: 0 48px; background: var(--surface-soft); border-right: 1px solid var(--line); position: relative; overflow: hidden; display: flex; flex-direction: column; } .login-story::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(var(--el-border-color) .7px,transparent .7px); background-size: 22px 22px; opacity: .55; mask-image: linear-gradient(transparent 5%,#000 55%,transparent 100%); pointer-events: none; } .login-story .brand { padding: 0; position: relative; height: 110px; } .login-story-copy { margin: auto; max-width: 490px; padding: 40px 0; position: relative; width: 100%; } .story-badge { display: inline-flex; align-items: center; gap: 8px; font-size: 10px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); padding: 8px 12px; color: var(--muted); margin-bottom: 26px; } .login-story h1 { font-size: clamp(30px,3.3vw,54px); line-height: 1.45; font-weight: 650; letter-spacing: -1.5px; } .login-story h1 > span { color: var(--accent); } .login-story-copy > p { color: var(--muted); font-size: 12px; line-height: 2; margin-top: 20px; max-width: 370px; } .login-network { position: relative; height: 270px; margin: 10px 0; display: grid; place-items: center; } .orbit { border: 1px dashed color-mix(in srgb,var(--accent) 20%,transparent); position: absolute; width: 135px; height: 135px; border-radius: 50%; } .orbit-two { width: 220px; height: 220px; } .orbit-three { width: 305px; height: 305px; border-color: var(--line); } .network-core { background: var(--surface); padding: 20px; border: 1px solid var(--line); border-radius: 24px; box-shadow: 0 15px 50px #7864d914; animation: float 6s ease-in-out infinite; } .network-core :deep(.brand-mark) { width: 53px; height: 53px; border-radius: 15px; } .network-core :deep(svg) { width: 41px; height: 41px; } .orbit-node { background: var(--surface); display: grid; place-items: center; width: 41px; height: 41px; border-radius: 13px; border: 1px solid var(--line); position: absolute; color: var(--accent); box-shadow: var(--shadow); font-size: 21px; animation: float 6s ease-in-out infinite; } .node-one { left: 17%; top: 22%; animation-delay: -1s; } .node-two { right: 12%; top: 28%; color: var(--mint); animation-delay: -2s; } .node-three { left: 24%; bottom: 10%; color: var(--mint); animation-delay: -3s; } .node-four { right: 24%; bottom: 12%; animation-delay: -4s; } .network-label { position: absolute; font-size: 8px; color: var(--muted); letter-spacing: 1px; } .label-one { left: 20%; top: 15%; } .label-two { right: 9%; top: 21%; } .label-three { bottom: 3%; right: 26%; } .story-features { display: flex; gap: 20px; justify-content: center; margin-top: 25px; flex-wrap: wrap; } .story-features > span { display: flex; align-items: center; gap: 5px; font-size: 9px; color: var(--muted); } .story-features .el-icon { color: var(--accent); font-size: 14px; } .story-footer { padding: 28px 0; font-size: 10px; color: var(--muted); display: flex; align-items: center; justify-content: space-between; position: relative; } .story-footer > span { font-size: 8px; letter-spacing: 1px; }
+.login-form-side { position: relative; background: var(--surface); display: flex; align-items: center; justify-content: center; padding: 100px 40px; } .login-preferences { position: absolute; right: 32px; top: 30px; } .login-form-wrap { max-width: 355px; width: 100%; animation: reveal .6s both; } .login-kicker { font-size: 8px; color: var(--muted); letter-spacing: 2px; } .login-form-wrap h2 { font-size: 32px; font-weight: 650; letter-spacing: -1px; margin: 15px 0 12px; } .greeting-dot { color: var(--accent); margin-left: 4px; } .login-subtitle { font-size: 11px; color: var(--muted); margin-bottom: 35px; line-height: 1.8; } .login-security { font-size: 9px; color: var(--muted); display: flex; gap: 6px; align-items: center; margin: 0 0 24px; } .login-submit { width: 100%; height: 44px!important; justify-content: center; gap: 12px; } .login-submit :deep(.el-icon) { margin-left: 12px; } .login-help { border-top: 1px solid var(--line); padding-top: 24px; margin-top: 28px; color: var(--muted); font-size: 9px; line-height: 1.8; display: flex; flex-direction: column; gap: 4px; } .login-copyright { position: absolute; bottom: 30px; color: var(--muted); font-size: 9px; text-align: center; padding: 0 20px; } .login-copyright > span { margin: 0 8px; } .login-page :deep(.el-input__wrapper) { min-height: 44px; } @keyframes float { 50% { transform: translateY(-7px); } }
+@media(max-width:900px) { .login-story { padding: 0 30px; } .login-story h1 { font-size: 32px; } .story-features { gap: 10px; } .login-form-side { padding: 90px 25px; } } @media(max-width:650px) { .login-page { display: block; } .login-story { display: none; } .login-form-side { min-height: 100dvh; } .login-form-wrap { max-width: 350px; } .login-preferences { top: 20px; right: 20px; } }
 </style>

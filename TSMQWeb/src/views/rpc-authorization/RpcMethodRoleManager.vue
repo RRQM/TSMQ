@@ -3,19 +3,16 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>RPC 角色授权管理</span>
+          <span>{{ t('RPC 角色授权管理') }}</span>
           <el-button type="primary" :loading="loading" @click="loadData">
-            <el-icon><Refresh /></el-icon>
-            刷新
-          </el-button>
+            <el-icon><Refresh /></el-icon> {{ t('刷新') }} </el-button>
         </div>
       </template>
 
-      <el-alert title="方法未设置时继承服务级授权；两级均未设置则拒绝访问。admin 角色和个人账户接口除外。权限调整立即生效。" type="info" :closable="false" style="margin-bottom: 16px" />
+      <el-alert :title="t('方法未设置时继承服务级授权；两级均未设置则拒绝访问。admin 角色和个人账户接口除外。权限调整立即生效。')" type="info" :closable="false" style="margin-bottom: 16px" />
+      <CollectionToolbar v-model="query" :title="t('RPC 角色授权管理')" :total="groupedData.length" icon="Key" />
       <el-table
-        :data="groupedData"
-        border
-        stripe
+        :data="filteredServices"
         row-key="ServiceName"
         v-loading="loading"
       >
@@ -23,9 +20,9 @@
           <template #default="{ row }">
             <div class="expand-content">
               <el-table :data="row.methods" border size="small">
-                <el-table-column prop="MethodName" label="方法名称" width="220" />
-                <el-table-column prop="MethodTargetKey" label="目标键" width="260" />
-                <el-table-column label="已授权角色">
+                <el-table-column prop="MethodName" :label="t('方法名称')" width="220" />
+                <el-table-column prop="MethodTargetKey" :label="t('目标键')" width="260" />
+                <el-table-column :label="t('已授权角色')">
                   <template #default="{ row: method }">
                     <template v-if="getRoleCodes(method.MethodTargetKey).length > 0">
                       <el-tag
@@ -36,27 +33,27 @@
                         style="margin-right: 4px"
                       >{{ code }}</el-tag>
                     </template>
-                    <el-text v-else type="info" size="small">未设置（继承服务级）</el-text>
+                    <el-text v-else type="info" size="small">{{ t('未设置（继承服务级）') }}</el-text>
                   </template>
                 </el-table-column>
-                <el-table-column label="操作" width="160" fixed="right">
+                <el-table-column :label="t('操作')" width="160" fixed="right">
                   <template #default="{ row: method }">
-                    <el-button v-permission="'RpcAuthorizationService.SetRpcRoles'" link type="primary" @click="handleSetRoles(method.MethodName, method.MethodTargetKey)">设置角色</el-button>
+                    <el-button v-permission="'RpcAuthorizationService.SetRpcRoles'" link type="primary" @click="handleSetRoles(method.MethodName, method.MethodTargetKey)">{{ t('设置角色') }}</el-button>
                     <el-button v-permission="'RpcAuthorizationService.RemoveRpcRoles'"
                       link
                       type="danger"
                       :disabled="getRoleCodes(method.MethodTargetKey).length === 0"
                       @click="handleRemoveRoles(method.MethodName, method.MethodTargetKey)"
-                    >清除</el-button>
+                    >{{ t('清除') }}</el-button>
                   </template>
                 </el-table-column>
               </el-table>
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="ServiceName" label="服务名称" />
-        <el-table-column prop="ClassTargetKey" label="服务目标键" width="220" />
-        <el-table-column label="服务级已授权角色">
+        <el-table-column prop="ServiceName" :label="t('服务名称')" />
+        <el-table-column prop="ClassTargetKey" :label="t('服务目标键')" width="220" />
+        <el-table-column :label="t('服务级已授权角色')">
           <template #default="{ row }">
             <template v-if="getRoleCodes(row.ClassTargetKey).length > 0">
               <el-tag
@@ -67,35 +64,35 @@
                 style="margin-right: 4px"
               >{{ code }}</el-tag>
             </template>
-            <el-text v-else type="info" size="small">未设置</el-text>
+            <el-text v-else type="info" size="small">{{ t('未设置') }}</el-text>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column :label="t('操作')" width="160" fixed="right">
           <template #default="{ row }">
-            <el-button v-permission="'RpcAuthorizationService.SetRpcRoles'" link type="primary" @click="handleSetRoles(row.ServiceName, row.ClassTargetKey)">设置角色</el-button>
+            <el-button v-permission="'RpcAuthorizationService.SetRpcRoles'" link type="primary" @click="handleSetRoles(row.ServiceName, row.ClassTargetKey)">{{ t('设置角色') }}</el-button>
             <el-button v-permission="'RpcAuthorizationService.RemoveRpcRoles'"
               link
               type="danger"
               :disabled="getRoleCodes(row.ClassTargetKey).length === 0"
               @click="handleRemoveRoles(row.ServiceName, row.ClassTargetKey)"
-            >清除</el-button>
+            >{{ t('清除') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" title="设置角色授权" width="520px">
+    <el-dialog v-model="dialogVisible" :title="t('设置角色授权')" width="520px">
       <el-descriptions :column="1" border size="small" style="margin-bottom: 16px">
-        <el-descriptions-item label="目标">{{ currentLabel }}</el-descriptions-item>
-        <el-descriptions-item label="目标键">{{ currentTargetKey }}</el-descriptions-item>
+        <el-descriptions-item :label="t('目标')">{{ currentLabel }}</el-descriptions-item>
+        <el-descriptions-item :label="t('目标键')">{{ currentTargetKey }}</el-descriptions-item>
       </el-descriptions>
 
-      <el-form label-width="80px">
-        <el-form-item label="授权角色">
+      <el-form label-width="100px">
+        <el-form-item :label="t('授权角色')">
           <el-select
             v-model="selectedRoleCodes"
             multiple
-            placeholder="请选择角色"
+            :placeholder="t('请选择角色')"
             style="width: 100%"
           >
             <el-option
@@ -109,14 +106,17 @@
       </el-form>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleSubmitRoles">确定</el-button>
+        <el-button @click="dialogVisible = false">{{ t('取消') }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSubmitRoles">{{ t('确定') }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
+import CollectionToolbar from '@/components/CollectionToolbar.vue'
+import { t, useLocale } from '@/locales'
+const { locale } = useLocale()
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { rpcAuthorizationApi, roleApi } from '@/api'
@@ -170,7 +170,7 @@ const loadData = async () => {
       logger.info('RpcMethodRoleManager', `加载 RPC 方法成功：${tableData.value.length} 个`)
     } else {
       logger.error('RpcMethodRoleManager', '加载 RPC 方法失败', methodsRes.reason)
-      ElMessage.error('加载 RPC 方法失败：' + (methodsRes.reason?.message || '未知错误'))
+      ElMessage.error(t("加载 RPC 方法失败：") + (methodsRes.reason?.message || t("未知错误")))
     }
 
     if (rolesRes.status === 'fulfilled') {
@@ -221,7 +221,7 @@ const handleSubmitRoles = async () => {
       RoleCodes: selectedRoleCodes.value
     })
     rpcRoleMap.value[currentTargetKey.value] = [...selectedRoleCodes.value]
-    ElMessage.success('设置成功')
+    ElMessage.success(t("设置成功"))
     logger.info('RpcMethodRoleManager', '角色设置成功', { targetKey: currentTargetKey.value })
     dialogVisible.value = false
   } catch (error) {
@@ -235,15 +235,15 @@ const handleRemoveRoles = async (label, targetKey) => {
   logger.info('RpcMethodRoleManager', '尝试清除角色授权', { label, targetKey })
   try {
     await ElMessageBox.confirm(
-      `确定要清除【${label}】的所有角色授权吗？`,
-      '提示',
-      { type: 'warning' }
+      t("确定要清除【{p0}】的所有角色授权吗？", { p0: label }),
+      t("提示"),
+      {confirmButtonText: t('确定'), cancelButtonText: t('取消'),  type: 'warning' }
     )
     loading.value = true
     await rpcAuthorizationApi.removeRpcRoles({ TargetKey: targetKey })
     delete rpcRoleMap.value[targetKey]
     rpcRoleMap.value = { ...rpcRoleMap.value }
-    ElMessage.success('清除成功')
+    ElMessage.success(t("清除成功"))
     logger.info('RpcMethodRoleManager', '角色授权清除成功', { targetKey })
   } catch (error) {
     if (error !== 'cancel') {
@@ -255,6 +255,8 @@ const handleRemoveRoles = async (label, targetKey) => {
     loading.value = false
   }
 }
+const query = ref('')
+const filteredServices = computed(() => groupedData.value.filter(service => [service.ServiceName, ...service.methods.map(m => m.MethodName)].some(name => name.toLowerCase().includes(query.value.toLowerCase()))))
 </script>
 
 <style scoped>

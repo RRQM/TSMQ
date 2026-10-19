@@ -3,6 +3,7 @@ import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import logger from '@/utils/logger'
+import { t } from '@/locales'
 
 const request = axios.create({
   baseURL: import.meta.env.DEV ? '/api' : '/',
@@ -45,6 +46,8 @@ request.interceptors.request.use(
 request.interceptors.response.use(
   (response: AxiosResponse) => {
     const res = response.data
+    const originalMessage = res.Message
+    if (typeof res.Message === 'string') res.Message = t(res.Message)
 
     logger.debug('Response', `请求成功: ${response.config.method?.toUpperCase()} ${response.config.url}`, {
       code: res.Code,
@@ -58,7 +61,7 @@ request.interceptors.response.use(
       })
 
       const jwtExpiredMessages = ['JWT令牌无效或已过期', '未提供JWT令牌', 'JWT服务未配置']
-      if (res.Code === 'Unauthorized' || jwtExpiredMessages.some(msg => res.Message?.includes(msg))) {
+      if (res.Code === 'Unauthorized' || jwtExpiredMessages.some(msg => originalMessage?.includes(msg))) {
         logger.warn('Response', 'JWT授权失败，跳转到登录页')
         const userStore = useUserStore()
         userStore.logout()
@@ -66,8 +69,8 @@ request.interceptors.response.use(
         return Promise.reject(new Error(res.Message))
       }
 
-      ElMessage.error(res.Message || '请求失败')
-      return Promise.reject(new Error(res.Message || '请求失败'))
+      ElMessage.error(res.Message || t('请求失败'))
+      return Promise.reject(new Error(res.Message || t('请求失败')))
     }
 
     return res
@@ -87,11 +90,11 @@ request.interceptors.response.use(
       window.location.href = '/login'
     } else if (error.response?.data) {
       const errorData = error.response.data
-      const errorMessage = errorData.Message || errorData.message || error.message || '请求失败'
+      const errorMessage = t(errorData.Message || errorData.message || error.message || '请求失败')
       ElMessage.error(errorMessage)
       return Promise.reject(new Error(errorMessage))
     } else {
-      ElMessage.error(error.message || '网络错误')
+      ElMessage.error(t(error.message || '网络错误'))
     }
     return Promise.reject(error)
   }

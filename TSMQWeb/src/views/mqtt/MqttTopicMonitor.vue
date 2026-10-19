@@ -3,53 +3,45 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>MQTT 主题订阅</span>
+          <span>{{ t('MQTT 主题订阅') }}</span>
           <div class="header-actions">
             <el-button
               type="primary"
               :disabled="selectedTopics.length === 0"
               @click="handleStartMonitor"
             >
-              <el-icon><DataAnalysis /></el-icon>
-              监控所选 ({{ selectedTopics.length }})
+              <el-icon><DataAnalysis /></el-icon> {{ t('监控所选 (') }}{{ selectedTopics.length }})
             </el-button>
             <el-button @click="loadTopics" :loading="topicLoading">
-              <el-icon><Refresh /></el-icon>
-              刷新
-            </el-button>
+              <el-icon><Refresh /></el-icon> {{ t('刷新') }} </el-button>
           </div>
         </div>
       </template>
 
+      <CollectionToolbar v-model="query" :title="t('已注册主题')" :total="topicList.length" icon="Share" />
       <el-table
-        :data="topicList"
+        :data="filteredRows"
         border
         stripe
         v-loading="topicLoading"
         @selection-change="handleTopicSelectionChange"
       >
         <el-table-column type="selection" width="50" align="center" />
-        <el-table-column prop="Topic" label="主题" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="SubscriberCount" label="订阅者数量" width="120" align="center" />
+        <el-table-column prop="Topic" :label="t('主题')" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="SubscriberCount" :label="t('订阅者数量')" width="120" align="center" />
       </el-table>
     </el-card>
 
     <el-card v-if="monitoringTopics.length > 0" style="margin-top: 16px;">
       <template #header>
         <div class="card-header">
-          <span>主题监控统计（自动刷新：{{ pollingInterval / 1000 }} 秒）</span>
+          <span>{{ t('主题监控统计（自动刷新：') }}{{ pollingInterval / 1000 }} {{ t('秒）') }}</span>
           <div class="header-actions">
-            <el-tag type="success" effect="dark">
-              监控中 {{ monitoringTopics.length }} 个主题
-            </el-tag>
+            <el-tag type="success" effect="dark"> {{ t('监控中') }} {{ monitoringTopics.length }} {{ t('个主题') }} </el-tag>
             <el-button v-permission="'MqttTopicManagerService.ResetMqttTopicStats'" @click="handleResetStats" :loading="resetLoading">
-              <el-icon><RefreshLeft /></el-icon>
-              重置计数
-            </el-button>
+              <el-icon><RefreshLeft /></el-icon> {{ t('重置计数') }} </el-button>
             <el-button type="danger" @click="handleStopMonitor">
-              <el-icon><CircleClose /></el-icon>
-              停止监控
-            </el-button>
+              <el-icon><CircleClose /></el-icon> {{ t('停止监控') }} </el-button>
           </div>
         </div>
       </template>
@@ -60,18 +52,18 @@
         stripe
         v-loading="statsLoading"
       >
-        <el-table-column prop="topic" label="主题" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="subscriberCount" label="订阅者数量" width="120" align="center" />
-        <el-table-column prop="inflowCount" label="流入总量" width="120" align="center" />
-        <el-table-column prop="outflowCount" label="流出总量" width="120" align="center" />
-        <el-table-column label="流入速率(条/秒)" width="150" align="center">
+        <el-table-column prop="topic" :label="t('主题')" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="subscriberCount" :label="t('订阅者数量')" width="120" align="center" />
+        <el-table-column prop="inflowCount" :label="t('流入总量')" width="120" align="center" />
+        <el-table-column prop="outflowCount" :label="t('流出总量')" width="120" align="center" />
+        <el-table-column :label="t('流入速率(条/秒)')" width="150" align="center">
           <template #default="{ row }">
             <el-tag :type="row.inflowRate > 0 ? 'success' : 'info'">
               {{ row.inflowRate.toFixed(1) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="流出速率(条/秒)" width="150" align="center">
+        <el-table-column :label="t('流出速率(条/秒)')" width="150" align="center">
           <template #default="{ row }">
             <el-tag :type="row.outflowRate > 0 ? 'warning' : 'info'">
               {{ row.outflowRate.toFixed(1) }}
@@ -84,7 +76,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import CollectionToolbar from '@/components/CollectionToolbar.vue'
+import { t, useLocale } from '@/locales'
+const { locale } = useLocale()
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { RefreshLeft } from '@element-plus/icons-vue'
 import { mqttTopicApi } from '@/api/index'
@@ -115,7 +110,7 @@ const loadTopics = async () => {
     const res = await mqttTopicApi.getTopicList()
     topicList.value = res.Topics || []
   } catch (error) {
-    ElMessage.error(error.message || '加载主题列表失败')
+    ElMessage.error(error.message || t("加载主题列表失败"))
   } finally {
     topicLoading.value = false
   }
@@ -142,10 +137,10 @@ const handleResetStats = async () => {
   try {
     await mqttTopicApi.resetTopicStats({ Topics: monitoringTopics.value })
     prevSnapshot.value = {}
-    ElMessage.success('计数已重置')
+    ElMessage.success(t("计数已重置"))
     await fetchStats()
   } catch (error) {
-    ElMessage.error((error instanceof Error ? error.message : null) || '重置失败')
+    ElMessage.error((error instanceof Error ? error.message : null) || t("重置失败"))
   } finally {
     resetLoading.value = false
   }
@@ -208,11 +203,13 @@ const fetchStats = async () => {
       }
     })
   } catch (error) {
-    ElMessage.error(error.message || '获取统计失败')
+    ElMessage.error(error.message || t("获取统计失败"))
   } finally {
     statsLoading.value = false
   }
 }
+const query = ref('')
+const filteredRows = computed(() => topicList.value.filter(row => [row.Topic].some(value => String(value || '').toLowerCase().includes(query.value.toLowerCase()))))
 </script>
 
 <style scoped>

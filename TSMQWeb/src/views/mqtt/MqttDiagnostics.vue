@@ -1,45 +1,20 @@
 <template>
-  <div>
-    <el-card>
-      <template #header>发送调试消息</template>
-      <el-form label-width="90px">
-        <el-form-item label="主题"><el-input v-model="publishForm.Topic" placeholder="devices/test/telemetry" /></el-form-item>
-        <el-form-item label="负载"><el-input v-model="publishForm.Payload" type="textarea" :rows="3" /></el-form-item>
-        <el-form-item label="编码"><el-radio-group v-model="publishForm.IsBase64"><el-radio-button :value="false">文本 / JSON</el-radio-button><el-radio-button :value="true">Base64</el-radio-button></el-radio-group><span class="hint">最多 64 KiB</span></el-form-item>
-        <el-form-item label="QoS"><el-select v-model="publishForm.Qos" style="width: 100px"><el-option v-for="qos in [0, 1, 2]" :key="qos" :value="qos" :label="String(qos)" /></el-select></el-form-item>
-        <el-form-item><el-button v-permission="'MqttAccessService.PublishMqttMessage'" type="primary" :loading="publishing" @click="publish">发送消息</el-button></el-form-item>
-      </el-form>
-    </el-card>
-    <el-card class="events">
-      <template #header><div class="actions"><span>连接与消息诊断</span><div><el-button @click="paused = !paused">{{ paused ? '继续刷新' : '暂停刷新' }}</el-button><el-button @click="exportEvents">导出</el-button><el-button @click="clear">清空视图</el-button></div></div></template>
-      <el-alert title="最近 1000 条事件保存在内存，重启清空。消息内容需在访问控制页开启采集；单条最多展示 4 KiB。" type="info" :closable="false" />
-      <el-form inline class="filters" @submit.prevent="reload">
-        <el-form-item label="主题过滤器"><el-input v-model="topicInput" placeholder="留空包含连接事件" clearable /></el-form-item>
-        <el-form-item label="客户端 ID"><el-input v-model="clientInput" clearable /></el-form-item>
-        <el-form-item><el-button :loading="fetching" @click="reload">查询</el-button></el-form-item>
-        <el-form-item label="内容格式"><el-select v-model="format" style="width: 100px"><el-option v-for="f in ['文本', 'JSON', 'Hex']" :key="f" :label="f" :value="f" /></el-select></el-form-item>
-      </el-form>
-      <el-table :data="events" border max-height="560" row-key="Id">
-        <el-table-column type="expand"><template #default="{ row }"><pre class="payload">{{ payloadText(row) }}</pre></template></el-table-column>
-        <el-table-column label="时间" width="180"><template #default="{ row }">{{ new Date(row.Timestamp).toLocaleString() }}</template></el-table-column>
-        <el-table-column label="类型" width="135"><template #default="{ row }"><el-tag :type="row.Kind.includes('Denied') || row.Kind.includes('Rejected') ? 'danger' : 'info'">{{ kindNames[row.Kind] || row.Kind }}</el-tag></template></el-table-column>
-        <el-table-column prop="ClientId" label="客户端 ID" min-width="130" show-overflow-tooltip />
-        <el-table-column prop="UserName" label="用户名" width="110" />
-        <el-table-column prop="Topic" label="主题" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="Qos" label="QoS" width="65" />
-        <el-table-column label="负载" width="100"><template #default="{ row }">{{ row.PayloadLength }} B{{ row.Truncated ? '（截断）' : '' }}</template></el-table-column>
-        <el-table-column prop="Detail" label="说明" min-width="230" show-overflow-tooltip />
-      </el-table>
-    </el-card>
+  <div class="diagnostics-grid">
+    <aside class="publish-pane"><el-card><template #header><div class="section-title"><span class="section-icon"><el-icon><Position /></el-icon></span><div><strong>{{ t('发送调试消息') }}</strong><p>{{ t('直接向 Broker 发布测试消息') }}</p></div></div></template><el-form label-position="top" @submit.prevent="publish"><el-form-item :label="t('主题')"><el-input v-model="publishForm.Topic" placeholder="devices/test/telemetry" /></el-form-item><el-form-item :label="t('编码')"><el-radio-group v-model="publishForm.IsBase64"><el-radio-button :value="false">{{ t('文本 / JSON') }}</el-radio-button><el-radio-button :value="true">Base64</el-radio-button></el-radio-group></el-form-item><el-form-item :label="t('负载')"><el-input v-model="publishForm.Payload" type="textarea" :rows="9" placeholder="{ &#10;  &quot;message&quot;: &quot;hello&quot;&#10;}" class="code-input" /></el-form-item><div class="publish-options"><el-form-item label="QoS"><el-select v-model="publishForm.Qos" style="width:85px"><el-option v-for="qos in [0,1,2]" :key="qos" :value="qos" :label="String(qos)" /></el-select></el-form-item><span>{{ payloadBytes }} B <span>/ 64 KiB</span></span></div><el-button v-permission="'MqttAccessService.PublishMqttMessage'" type="primary" :loading="publishing" :disabled="!publishForm.Topic" native-type="submit" class="publish-submit"><el-icon><Position /></el-icon>{{ t('发送消息') }}</el-button></el-form><div class="publish-note"><el-icon><InfoFilled /></el-icon><span>{{ t('调试发布使用管理权限，不受设备主题 ACL 限制。') }}</span></div></el-card><div class="diagnostic-hint"><el-icon><Lock /></el-icon><div><strong>{{ t('按需采集，安心排障') }}</strong><p>{{ t('负载默认不采集，可在访问控制中开启。每条最多保留 4 KiB。') }}</p><router-link to="/mqtt-access" v-permission="'MqttAccessService.GetMqttAccessPolicy'">{{ t('前往访问控制') }} →</router-link></div></div></aside>
+    <el-card class="event-pane"><template #header><div class="actions"><div class="section-title"><span class="section-icon mint"><el-icon><DataLine /></el-icon></span><div><strong>{{ t('连接与消息诊断') }}</strong><p>{{ t('最近事件') }} <span class="count-badge">{{ events.length }}</span><span class="stream-state"><span class="status-dot" :class="{ paused }" />{{ paused ? t('已暂停') : t('实时更新') }}</span></p></div></div><div class="event-actions"><button class="icon-button bordered" @click="paused = !paused" :title="paused ? t('继续刷新') : t('暂停刷新')" :aria-label="paused ? t('继续刷新') : t('暂停刷新')"><el-icon><VideoPlay v-if="paused" /><VideoPause v-else /></el-icon></button><button class="icon-button bordered" @click="exportEvents" :title="t('导出')" :aria-label="t('导出')"><el-icon><Download /></el-icon></button><button class="icon-button bordered" @click="clear" :title="t('清空视图')" :aria-label="t('清空视图')"><el-icon><Delete /></el-icon></button></div></div></template><el-form inline class="filters" @submit.prevent="reload"><el-form-item><el-input v-model="topicInput" :placeholder="t('主题过滤器')" prefix-icon="Search" clearable /></el-form-item><el-form-item><el-input v-model="clientInput" :placeholder="t('客户端 ID')" clearable /></el-form-item><el-form-item><el-button :loading="fetching" native-type="submit">{{ t('查询') }}</el-button></el-form-item><el-form-item><el-select v-model="format" style="width:90px"><el-option :label="t('文本')" value="text" /><el-option label="JSON" value="json" /><el-option label="Hex" value="hex" /></el-select></el-form-item></el-form>
+    <el-table :data="events" max-height="580" row-key="Id" :empty-text="t('等待连接与消息事件…')"><el-table-column type="expand"><template #default="{ row }"><div class="event-detail"><div><span>{{ t('客户端 ID') }}</span><code>{{ row.ClientId || '—' }}</code><span>{{ t('用户名') }}</span><code>{{ row.UserName || '—' }}</code></div><p>{{ t(row.Detail) }}</p><pre class="payload">{{ payloadText(row) }}</pre></div></template></el-table-column><el-table-column :label="t('时间')" width="105"><template #default="{ row }"><span class="mono">{{ new Date(row.Timestamp).toLocaleTimeString(locale, { hour12: false }) }}</span></template></el-table-column><el-table-column :label="t('类型')" width="155"><template #default="{ row }"><el-tag :type="row.Kind.includes('Denied') || row.Kind.includes('Rejected') ? 'danger' : row.Kind === 'Message' ? 'success' : 'info'">{{ t(kindNames[row.Kind] || row.Kind) }}</el-tag></template></el-table-column><el-table-column prop="Topic" :label="t('主题')" min-width="170" show-overflow-tooltip><template #default="{ row }"><span class="mono">{{ row.Topic || '—' }}</span></template></el-table-column><el-table-column prop="ClientId" :label="t('客户端 ID')" min-width="130" show-overflow-tooltip /><el-table-column :label="t('负载')" width="95"><template #default="{ row }"><span class="mono">{{ row.PayloadLength }} B</span>{{ row.Truncated ? '…' : '' }}</template></el-table-column><el-table-column :label="t('说明')" min-width="180" show-overflow-tooltip><template #default="{ row }">{{ t(row.Detail) }}</template></el-table-column></el-table><div class="record-footer"><span>{{ t('最多保留 1000 条事件 · 重启后清空') }}</span><span>{{ t('每 2 秒刷新') }}</span></div></el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, reactive, ref } from 'vue'
+import { t, useLocale } from '@/locales'
+const { locale } = useLocale()
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { mqttAccessApi, type DiagnosticEvent } from '@/api/mqtt-access'
 const publishForm = reactive({ Topic: '', Payload: '', IsBase64: false, Qos: 0, Retain: false })
-const events = ref<DiagnosticEvent[]>([]), topicInput = ref(''), clientInput = ref(''), format = ref('文本')
+const payloadBytes = computed(() => new TextEncoder().encode(publishForm.Payload).length)
+const events = ref<DiagnosticEvent[]>([]), topicInput = ref(''), clientInput = ref(''), format = ref('text')
 const paused = ref(false), fetching = ref(false), publishing = ref(false)
 const kindNames: Record<string, string> = { Connected: '连接通过', ConnectionRejected: '连接拒绝', Disconnected: '连接断开', AccessDenied: '权限拒绝', Message: '收到消息', DebugPublish: '调试发布', Subscribed: '订阅通过', Discarded: '消息丢弃', PolicyChanged: '策略变更' }
 let cursor = 0, topic = '', client = '', timer: ReturnType<typeof setTimeout> | undefined, stopped = false, generation = 0
@@ -63,11 +38,11 @@ async function publish() {
   finally { publishing.value = false }
 }
 function payloadText(event: DiagnosticEvent) {
-  if (!event.PayloadBase64) return event.PayloadLength ? '未采集消息内容' : '无负载'
+  if (!event.PayloadBase64) return event.PayloadLength ? t('未采集消息内容') : t('无负载')
   const bytes = Uint8Array.from(atob(event.PayloadBase64), c => c.charCodeAt(0))
-  if (format.value === 'Hex') return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join(' ')
+  if (format.value === 'hex') return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join(' ')
   const text = new TextDecoder().decode(bytes)
-  if (format.value === 'JSON') { try { return JSON.stringify(JSON.parse(text), null, 2) } catch { return text } }
+  if (format.value === 'json') { try { return JSON.stringify(JSON.parse(text), null, 2) } catch { return text } }
   return text
 }
 function exportEvents() {
@@ -79,9 +54,6 @@ onUnmounted(() => { stopped = true; generation++; clearTimeout(timer) })
 </script>
 
 <style scoped>
-.events { margin-top: 20px; }
-.actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.filters { margin-top: 16px; }
-.hint { margin-left: 12px; color: var(--el-text-color-secondary); }
-.payload { white-space: pre-wrap; overflow-wrap: anywhere; padding: 0 24px; }
+.diagnostics-grid { display:grid;grid-template-columns:300px minmax(0,1fr);gap:22px;align-items:start; } .section-title { display:flex;align-items:center;gap:10px; } .section-icon { width:33px;height:33px;border-radius:9px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);font-size:18px;flex-shrink:0; } .section-icon.mint { color:var(--mint);background:var(--mint-soft); } .section-title strong { font-size:12px;font-weight:600; } .section-title p { font-size:9px;color:var(--muted);font-weight:400;margin-top:6px; } .publish-submit { width:100%; } .code-input :deep(textarea) { font-family:'Consolas',monospace;font-size:12px;line-height:1.8;padding:12px;background:var(--surface-soft); } .publish-options { display:flex;justify-content:space-between;align-items:center;margin-top:10px; } .publish-options > span { font-size:9px;color:var(--muted); } .publish-options > span > span { opacity:.5; } .publish-note { display:flex;gap:8px;color:var(--muted);font-size:9px;line-height:1.8;border-top:1px solid var(--line);padding-top:17px;margin-top:20px; } .publish-note .el-icon { flex-shrink:0;margin-top:3px; } .diagnostic-hint { display:flex;gap:12px;padding:22px 5px;color:var(--muted); } .diagnostic-hint > .el-icon { font-size:19px;color:var(--accent);margin-top:2px; } .diagnostic-hint strong { color:var(--ink);font-size:11px;font-weight:500; } .diagnostic-hint p { font-size:10px;line-height:1.8;margin:9px 0; } .diagnostic-hint a { font-size:10px;color:var(--accent); } .actions { display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap; } .event-actions { display:flex;gap:6px; } .bordered { border:1px solid var(--line); } .stream-state { margin-left:12px;display:inline-flex;gap:5px;align-items:center;color:var(--mint); } .status-dot.paused { background:var(--muted); } .filters :deep(.el-input) { width:165px; } .event-detail { padding:18px 25px;background:var(--surface-soft); } .event-detail > div { display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:10px; } .event-detail code { color:var(--ink); } .event-detail p { font-size:10px;color:var(--muted);margin-top:12px; } .payload { background:var(--surface);padding:15px;border:1px solid var(--line);border-radius:8px;white-space:pre-wrap;overflow-wrap:anywhere;font:11px/1.8 'Consolas',monospace;max-height:330px;overflow:auto; }
+@media(max-width:1250px) { .diagnostics-grid { grid-template-columns:260px minmax(0,1fr);gap:16px; } } @media(max-width:1000px) { .diagnostics-grid { grid-template-columns:minmax(0,1fr); } .publish-pane :deep(.el-form) { display:grid;grid-template-columns:1fr 1fr;gap:0 20px;align-items:center; } .publish-pane :deep(.el-form-item:nth-child(3)) { grid-column:1/-1; } .publish-pane :deep(textarea) { min-height:100px!important;height:100px; } .diagnostic-hint { display:none; } } @media(max-width:600px) { .publish-pane :deep(.el-form) { display:block; } }
 </style>
