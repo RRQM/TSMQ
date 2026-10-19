@@ -22,10 +22,7 @@ export function setBaseURL(url: string): void {
 
 request.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    logger.debug('Request', `发起请求: ${config.method?.toUpperCase()} ${config.url}`, {
-      data: config.data,
-      params: config.params
-    })
+    logger.debug('Request', `发起请求: ${config.method?.toUpperCase()} ${config.url}`)
 
     const userStore = useUserStore()
     if (userStore.token) {
@@ -61,7 +58,7 @@ request.interceptors.response.use(
       })
 
       const jwtExpiredMessages = ['JWT令牌无效或已过期', '未提供JWT令牌', 'JWT服务未配置']
-      if (jwtExpiredMessages.some(msg => res.Message?.includes(msg))) {
+      if (res.Code === 'Unauthorized' || jwtExpiredMessages.some(msg => res.Message?.includes(msg))) {
         logger.warn('Response', 'JWT授权失败，跳转到登录页')
         const userStore = useUserStore()
         userStore.logout()

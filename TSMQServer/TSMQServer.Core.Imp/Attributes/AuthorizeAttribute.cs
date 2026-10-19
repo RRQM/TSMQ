@@ -26,7 +26,7 @@ namespace TSMQServer.Core.Imp.Attributes;
 /// </para>
 /// <para>
 /// 动态角色授权优先匹配方法级键（<c>ClassName.MethodName</c>），
-/// 若无配置则回退至类级键（<c>ClassName</c>）。数据库未配置角色时不限制访问。
+/// 若无配置则回退至类级键（<c>ClassName</c>）。数据库未配置角色时默认拒绝访问，管理员及个人账户接口除外。
 /// </para>
 /// </summary>
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = false)]
@@ -68,7 +68,7 @@ public class AuthorizeAttribute : RpcActionFilterAttribute
         if (string.IsNullOrEmpty(token))
         {
             invokeResult.Status = InvokeStatus.Success;
-            invokeResult.Result = new ResponseBase() { Code = ResponseCode.Error, Message = "未提供JWT令牌" };
+            invokeResult.Result = new ResponseBase() { Code = ResponseCode.Unauthorized, Message = "未提供JWT令牌" };
             return invokeResult;
         }
 
@@ -76,42 +76,28 @@ public class AuthorizeAttribute : RpcActionFilterAttribute
         if (!isValid || principal == null)
         {
             invokeResult.Status = InvokeStatus.Success;
-            invokeResult.Result = new ResponseBase() { Code = ResponseCode.Error, Message = "JWT令牌无效或已过期" };
+            invokeResult.Result = new ResponseBase() { Code = ResponseCode.Unauthorized, Message = "JWT令牌无效或已过期" };
             return invokeResult;
         }
 
-        callContext.SetValue(JwtPrincipalProperty, principal);
-
-        // 动态角色授权
-        var rpcAuthorizationFromDB = callContext.Resolver.Resolve<IRpcAuthorizationFromDB>();
-        if (rpcAuthorizationFromDB != null)
+        var users = callContext.Resolver.Resolve<IUserManagerFromDB>();
+        var loginToken = principal.FindFirst("LoginToken")?.Value;
+        var (exists, user) = await users.TryGetLoginedInfoAsync(loginToken ?? string.Empty);
+        if (!exists || user == null || !user.IsEnabled || user.Id.ToString() != principal.FindFirst(ClaimTypes.NameIdentifier)?.Value)
         {
-            var className = callContext.RpcMethod?.ServerToType?.Name;
-            var methodName = callContext.RpcMethod?.Name;
-
-            string[]? requiredRoles = null;
-
-            if (className != null && methodName != null)
-            {
-                requiredRoles = await rpcAuthorizationFromDB.GetRolesForTargetAsync($"{className}.{methodName}");
-            }
-
-            if ((requiredRoles == null || requiredRoles.Length == 0) && className != null)
-            {
-                requiredRoles = await rpcAuthorizationFromDB.GetRolesForTargetAsync(className);
-            }
-
-            if (requiredRoles != null && requiredRoles.Length > 0)
-            {
-                if (!requiredRoles.Any(r => principal.IsInRole(r)))
-                {
-                    invokeResult.Status = InvokeStatus.Success;
-                    invokeResult.Result = new ResponseBase() { Code = ResponseCode.Error, Message = "权限不足，缺少所需角色" };
-                    return invokeResult;
-                }
-            }
+            invokeResult.Status = InvokeStatus.Success;
+            invokeResult.Result = new ResponseBase { Code = ResponseCode.Unauthorized, Message = "登录会话已失效或账号已禁用" };
+            return invokeResult;
         }
-
+        var evaluator = callContext.Resolver.Resolve<TSMQServer.Core.Imp.Services.RpcPermissionEvaluator>();
+        principal = await evaluator.RefreshAsync(principal, user);
+        callContext.SetValue(JwtPrincipalProperty, principal);
+        if (!await evaluator.IsAllowedAsync(principal, callContext.RpcMethod?.ServerToType?.Name ?? "", callContext.RpcMethod?.Name ?? ""))
+        {
+            invokeResult.Status = InvokeStatus.Success;
+            invokeResult.Result = new ResponseBase { Code = ResponseCode.Forbidden, Message = "权限不足，当前操作未获授权" };
+            return invokeResult;
+        }
         return await base.ExecutingAsync(callContext, parameters, invokeResult);
     }
 

@@ -5,7 +5,7 @@
         <div class="card-header">
           <span>MQTT 客户端连接</span>
           <div class="header-actions">
-            <el-button
+            <el-button v-permission="'MqttClientManagerService.KickMqttClients'"
               type="danger"
               :disabled="selectedClients.length === 0"
               @click="handleKick"

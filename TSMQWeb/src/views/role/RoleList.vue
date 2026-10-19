@@ -4,7 +4,7 @@
       <template #header>
         <div class="card-header">
           <span>角色管理</span>
-          <el-button type="primary" @click="handleAdd">
+          <el-button v-permission="'RoleManagerService.CreateRole'" type="primary" @click="handleAdd">
             <el-icon>
               <Plus />
             </el-icon>
@@ -27,8 +27,8 @@
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button v-permission="'RoleManagerService.UpdateRole'" link type="primary" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-permission="'RoleManagerService.DeleteRole'" link type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>

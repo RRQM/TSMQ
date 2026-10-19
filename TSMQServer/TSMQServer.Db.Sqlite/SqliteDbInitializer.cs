@@ -54,6 +54,7 @@ public class SqliteDbInitializer
             await client.CodeFirst!.InitTableAsync<MqttSslCertEntity>().ConfigureAwait(false);
             await client.CodeFirst!.InitTableAsync<MqttStatsSnapshotEntity>().ConfigureAwait(false);
             await client.CodeFirst!.InitTableAsync<BrokerSettingsEntity>().ConfigureAwait(false);
+            await client.CodeFirst!.InitTableAsync<MqttAccessPolicyEntity>().ConfigureAwait(false);
             await SeedDefaultDataAsync(client).ConfigureAwait(false);
         }
     }

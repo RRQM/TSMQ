@@ -29,12 +29,15 @@ public static class TSMQServerCoreImpExtension
         services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
 
         services.AddSingleton<IJwtService, JwtService>();
+        services.AddTransient<RpcPermissionEvaluator>();
 
         services.Configure<LogFileOptions>(options =>
         {
             options.LogDirectory = logDirectory ?? Path.Combine(AppContext.BaseDirectory, "logs");
         });
         services.AddSingleton<NLogFileReader>();
+        services.AddSingleton<MqttDiagnostics>();
+        services.AddSingleton<MqttAccessManager>();
 
         services.AddSingleton<MqttServerHostService>();
         services.AddSingleton<IMqttServerHostService>(sp => sp.GetRequiredService<MqttServerHostService>());

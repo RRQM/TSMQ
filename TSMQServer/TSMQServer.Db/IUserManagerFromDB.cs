@@ -16,6 +16,8 @@ namespace TSMQServer.Db;
 
 public interface IUserManagerFromDB
 {
+    /// <summary>撤销指定登录会话。</summary>
+    Task LogoutAsync(string loginToken);
     /// <summary>
     /// 获取账号的注册信息
     /// </summary>

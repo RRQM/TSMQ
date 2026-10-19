@@ -31,9 +31,9 @@ namespace TSMQServer.Core.Imp.Services;
 /// </summary>
 public sealed class MqttServerHostService : IHostedService, IMqttServerHostService
 {
-    private readonly IMqttConnectAuthFromDB m_authFromDB;
+    private readonly MqttAccessManager m_access;
     private readonly ConcurrentDictionary<string, MqttServerConfig> m_configs = new();
-    private readonly MqttMessageDiscardPlugin m_discardPlugin = new();
+    private readonly MqttMessageDiscardPlugin m_discardPlugin;
     private readonly HttpService m_httpService = new();
     private readonly SemaphoreSlim m_lock = new(1, 1);
     private readonly ILogger<MqttServerHostService> m_logger;
@@ -54,15 +54,16 @@ public sealed class MqttServerHostService : IHostedService, IMqttServerHostServi
     /// <summary>
     /// <inheritdoc cref="MqttServerHostService"/>
     /// </summary>
-    public MqttServerHostService(ILogger<MqttServerHostService> logger, IMqttServerFromDB mqttServerFromDB, IMqttConnectAuthFromDB authFromDB, IMqttSslCertFromDB sslCertFromDB, IServiceScopeFactory scopeFactory)
+    public MqttServerHostService(ILogger<MqttServerHostService> logger, IMqttServerFromDB mqttServerFromDB, MqttAccessManager access, IMqttSslCertFromDB sslCertFromDB, IServiceScopeFactory scopeFactory, MqttDiagnostics diagnostics)
     {
-        this.m_tcpService = new TSMQService(this.m_sharedBroker);
+        this.m_tcpService = new TSMQService(this.m_sharedBroker, access);
+        this.m_discardPlugin = new MqttMessageDiscardPlugin(diagnostics);
         this.m_logger = logger;
         this.m_mqttServerFromDB = mqttServerFromDB;
-        this.m_authFromDB = authFromDB;
+        this.m_access = access;
         this.m_sslCertFromDB = sslCertFromDB;
         this.m_scopeFactory = scopeFactory;
-        this.m_plugin = new MqttServerPlugin(authFromDB, this.TrackInflow);
+        this.m_plugin = new MqttServerPlugin(access, this.TrackInflow);
     }
 
     /// <inheritdoc/>
@@ -258,16 +259,19 @@ public sealed class MqttServerHostService : IHostedService, IMqttServerHostServi
         {
             try
             {
+                var kicked = false;
                 if (this.m_tcpService.TryGetClient(clientId, out var tcpClient))
                 {
                     await tcpClient.CloseAsync("管理员踢出");
+                    kicked = true;
                 }
 
                 if (this.m_httpService.TryGetClient(clientId, out var wsClient))
                 {
                     await wsClient.CloseAsync("管理员踢出");
+                    kicked = true;
                 }
-                count++;
+                if (kicked) count++;
             }
             catch
             {
@@ -328,10 +332,8 @@ public sealed class MqttServerHostService : IHostedService, IMqttServerHostServi
     }
 
     /// <inheritdoc/>
-    public void SetAuthEnabled(bool enabled)
-    {
-        this.m_plugin.SetAuthEnabled(enabled);
-    }
+    public Task<int> PublishMessageAsync(string topic, ReadOnlyMemory<byte> payload, int qos, bool retain) =>
+        this.m_sharedBroker.ForwardMessageAsync(new MqttArrivedMessage(topic, (QosLevel)qos, retain, payload)).AsTask();
 
     /// <inheritdoc/>
     public (int MessageCapacity, int MessageExpirySeconds, int SessionExpirySeconds) GetBrokerSettings()
@@ -437,6 +439,8 @@ public sealed class MqttServerHostService : IHostedService, IMqttServerHostServi
     /// <inheritdoc/>
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        await this.m_access.InitializeAsync(this.m_sharedBroker);
+
         await this.m_tcpService.SetupAsync(new TouchSocketConfig()
             .ConfigurePlugins(a =>
             {
@@ -453,7 +457,9 @@ public sealed class MqttServerHostService : IHostedService, IMqttServerHostServi
             })
             .ConfigurePlugins(a =>
             {
-                a.UseMqttWebSocket();
+                a.Add(new AuthorizedMqttWebSocketFeature(this.m_sharedBroker, this.m_access,
+                    (client, context) => this.m_configs.Values.Any(c => c.IsRunning && c.Type == MqttServerType.WebSocket
+                        && c.Port == client.ServicePort && context.Request.UrlEquals(c.Path))));
                 a.Add(this.m_plugin);
                 a.Add(this.m_discardPlugin);
             }));
@@ -598,7 +604,8 @@ public sealed class MqttServerHostService : IHostedService, IMqttServerHostServi
         ServiceSslOption? sslOption = null;
         if (!string.IsNullOrEmpty(config.SslCertId))
         {
-            var certData = this.m_sslCertFromDB.GetCertDataAsync(config.SslCertId).GetAwaiter().GetResult();
+            var certData = this.m_sslCertFromDB.GetCertDataAsync(config.SslCertId).GetAwaiter().GetResult()
+                ?? throw new InvalidOperationException("监听引用的 SSL 证书不存在，拒绝启动未加密监听");
             if (certData != null)
             {
                 var certificate = LoadX509Certificate(certData);
@@ -748,10 +755,14 @@ public sealed class MqttServerHostService : IHostedService, IMqttServerHostServi
 
     private class TSMQService : MqttTcpServiceBase
     {
-        public TSMQService(MqttBroker mqttBroker)
+        private readonly MqttAccessManager m_access;
+        public TSMQService(MqttBroker mqttBroker, MqttAccessManager access)
         {
             this.MqttBroker = mqttBroker;
+            this.m_access = access;
         }
+
+        protected override MqttTcpSessionClient NewClient() => new AuthorizedMqttTcpSessionClient(this.MqttBroker, this.m_access);
 
         public override MqttBroker MqttBroker { get; }
     }

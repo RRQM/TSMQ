@@ -64,6 +64,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import logger from '@/utils/logger'
+import { userApi } from '@/api'
 
 logger.info('MainLayout', '主布局组件加载')
 
@@ -80,7 +81,7 @@ onMounted(() => {
 
 const menuRoutes = computed(() => {
   const mainRoute = router.options.routes.find(r => r.path === '/')
-  return mainRoute?.children || []
+  return (mainRoute?.children || []).filter(r => !r.meta?.permission || userStore.hasPermission(String(r.meta.permission)))
 })
 
 const activeMenu = computed(() => route.path)
@@ -94,6 +95,7 @@ const handleCommand = async command => {
         type: 'warning'
       })
       logger.info('MainLayout', '用户确认退出登录')
+      await userApi.logout().catch(() => {})
       userStore.logout()
       router.push('/login')
     } catch {

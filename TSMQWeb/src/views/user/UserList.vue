@@ -1,10 +1,10 @@
-﻿<template>
+<template>
   <div class="user-list">
     <el-card>
       <template #header>
         <div class="card-header">
           <span>用户管理</span>
-          <el-button type="primary" :icon="Plus" @click="handleAdd">新增用户</el-button>
+          <el-button v-permission="'UserManagerService.Register'" type="primary" :icon="Plus" @click="handleAdd">新增用户</el-button>
         </div>
       </template>
 
@@ -40,9 +40,9 @@
         <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" :icon="View" @click="handleView(row)">查看</el-button>
-            <el-button link type="primary" :icon="Key" @click="handleAssignRole(row)">分配角色</el-button>
-            <el-button link type="warning" :icon="Lock" @click="handleChangePassword(row)">改密码</el-button>
-            <el-button link type="danger" :icon="Delete" @click="handleDelete(row)">删除</el-button>
+            <el-button v-permission="'UserManagerService.AssignUserRoles'" link type="primary" :icon="Key" @click="handleAssignRole(row)">分配角色</el-button>
+            <el-button v-if="row.Account === userStore.userInfo?.account" link type="warning" :icon="Lock" @click="handleChangePassword(row)">改密码</el-button>
+            <el-button v-permission="'UserManagerService.DeleteUser'" link type="danger" :icon="Delete" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -147,6 +147,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, View, Key, Lock, Delete } from '@element-plus/icons-vue'
 import { userApi, roleApi } from '@/api'
 import logger from '@/utils/logger'
+import { useUserStore } from '@/stores/user'
+const userStore = useUserStore()
 
 logger.info('UserList', '用户管理页面加载')
 
@@ -381,8 +383,10 @@ const handleSubmitPassword = async () => {
         NewPassword: passwordForm.NewPassword
       })
       if (res.Code === 'Success') {
-        ElMessage.success('密码修改成功')
+        ElMessage.success('密码修改成功，请重新登录')
         passwordDialogVisible.value = false
+        userStore.logout()
+        window.location.href = '/login'
       } else {
         ElMessage.error(res.Message || '密码修改失败')
       }

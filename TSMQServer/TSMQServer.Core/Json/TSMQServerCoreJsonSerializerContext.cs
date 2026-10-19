@@ -114,6 +114,14 @@ namespace TSMQServer.Core.Json;
 [JsonSerializable(typeof(ResetMqttTopicStatsRequest))]
 [JsonSerializable(typeof(MqttTopicListResponse))]
 [JsonSerializable(typeof(MqttTopicStatsResponse))]
+[JsonSerializable(typeof(MqttAccessPolicy))]
+[JsonSerializable(typeof(MqttAccessPolicyResponse))]
+[JsonSerializable(typeof(SetMqttAccessPolicyRequest))]
+[JsonSerializable(typeof(TestMqttAccessRequest))]
+[JsonSerializable(typeof(TestMqttAccessResponse))]
+[JsonSerializable(typeof(GetMqttDiagnosticsRequest))]
+[JsonSerializable(typeof(MqttDiagnosticsResponse))]
+[JsonSerializable(typeof(PublishMqttMessageRequest))]
 public partial class TSMQServerCoreJsonSerializerContext : JsonSerializerContext
 {
 }

@@ -24,13 +24,17 @@ namespace TSMQServer.Core.Imp.Services;
 [LoggerFilter]
 public partial class UserManagerService : TransientRpcServer, IUserManagerService
 {
+    private readonly RpcPermissionEvaluator m_permissions;
+    private readonly RpcStore m_rpcStore;
     private readonly IJwtService m_jwtService;
     private readonly ILogger<UserManagerService> m_logger;
     private readonly IRoleManagerFromDB m_roleManager;
     private readonly IUserManagerFromDB m_userManager;
 
-    public UserManagerService(ILogger<UserManagerService> logger, IUserManagerFromDB userManager, IJwtService jwtService, IRoleManagerFromDB roleManager)
+    public UserManagerService(ILogger<UserManagerService> logger, IUserManagerFromDB userManager, IJwtService jwtService, IRoleManagerFromDB roleManager, RpcPermissionEvaluator permissions, RpcStore rpcStore)
     {
+        this.m_permissions = permissions;
+        this.m_rpcStore = rpcStore;
         this.m_logger = logger;
         this.m_userManager = userManager;
         this.m_jwtService = jwtService;
@@ -40,8 +44,13 @@ public partial class UserManagerService : TransientRpcServer, IUserManagerServic
     public async Task<ResponseBase> AssignUserRoles(AssignUserRolesRequest request)
     {
         var response = new ResponseBase();
-        LogAssigningUserRoles(this.m_logger, request.UserId, request.RoleIds.Length);
-        var roleIds = string.Join(",", request.RoleIds);
+        var target = await this.m_userManager.GetUserByIdAsync(request.UserId);
+        var assignedRoles = await this.m_roleManager.GetRolesByIdsAsync(request.RoleIds ?? []);
+        if (target == null || assignedRoles.Count != (request.RoleIds ?? []).Distinct().Count()) return response.FromFail("用户或角色不存在");
+        if (target.Account == "admin" && !assignedRoles.Any(r => r.RoleCode == "admin" && r.IsEnabled))
+            return response.FromFail("内置管理员必须保留管理员角色");
+        LogAssigningUserRoles(this.m_logger, request.UserId, (request.RoleIds ?? []).Length);
+        var roleIds = string.Join(",", request.RoleIds ?? []);
         var result = await this.m_userManager.AssignUserRolesAsync(request.UserId, roleIds);
         if (!result)
         {
@@ -113,6 +122,12 @@ public partial class UserManagerService : TransientRpcServer, IUserManagerServic
         }
 
         response.User = userInfo;
+        var current = this.CallContext.GetValue(AuthorizeAttribute.JwtPrincipalProperty)!;
+        foreach (var method in this.m_rpcStore.GetAllMethods())
+        {
+            if (await this.m_permissions.IsAllowedAsync(current, method.ServerToType.Name, method.Name))
+                response.Permissions.Add($"{method.ServerToType.Name}.{method.Name}");
+        }
         return response.FromSuccess("获取成功");
     }
 
@@ -155,6 +170,8 @@ public partial class UserManagerService : TransientRpcServer, IUserManagerServic
             return response.FromFail("没有该账号的注册信息");
         }
 
+        if (!userInfo.IsEnabled) return response.FromFail("账号或密码不正确");
+
         if (!request.Password.Equals(userInfo.Password))
         {
             LogLoginWrongPassword(this.m_logger, request.Account);
@@ -180,7 +197,7 @@ public partial class UserManagerService : TransientRpcServer, IUserManagerServic
                 .Select(long.Parse).ToList();
             var roles = await this.m_roleManager.GetRolesByIdsAsync(roleIdList);
 
-            foreach (var role in roles)
+            foreach (var role in roles.Where(r => r.IsEnabled))
             {
                 if (!string.IsNullOrEmpty(role.RoleCode))
                 {
@@ -225,9 +242,19 @@ public partial class UserManagerService : TransientRpcServer, IUserManagerServic
         return response.FromSuccess("注册成功");
     }
 
+    /// <inheritdoc/>
+    public async Task<ResponseBase> Logout(LoginedRequest request)
+    {
+        var principal = this.CallContext.GetValue(AuthorizeAttribute.JwtPrincipalProperty)!;
+        await this.m_userManager.LogoutAsync(principal.FindFirst("LoginToken")!.Value);
+        return new ResponseBase().FromSuccess("已退出登录");
+    }
+
     public async Task<ResponseBase> DeleteUser(DeleteUserRequest request)
     {
         var response = new ResponseBase();
+        var target = await this.m_userManager.GetUserByIdAsync(request.UserId);
+        if (target?.Account == "admin") return response.FromFail("不能删除内置管理员");
         var deleted = await this.m_userManager.DeleteUserAsync(request.UserId);
         if (!deleted)
         {

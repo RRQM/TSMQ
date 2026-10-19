@@ -21,6 +21,9 @@ namespace TSMQServer.Core;
 [GeneratorRpcProxy]
 public interface IUserManagerService : ITransientRpcServer
 {
+    /// <summary>退出当前登录会话。</summary>
+    [Description("退出登录"), WebApi(Method = HttpMethodType.Post), DmtpRpc, JsonRpc(MethodInvoke = true)]
+    Task<ResponseBase> Logout(LoginedRequest request);
     /// <summary>
     /// 分配用户角色
     /// </summary>

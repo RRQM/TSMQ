@@ -11,6 +11,7 @@
         </div>
       </template>
 
+      <el-alert title="方法未设置时继承服务级授权；两级均未设置则拒绝访问。admin 角色和个人账户接口除外。权限调整立即生效。" type="info" :closable="false" style="margin-bottom: 16px" />
       <el-table
         :data="groupedData"
         border
@@ -40,8 +41,8 @@
                 </el-table-column>
                 <el-table-column label="操作" width="160" fixed="right">
                   <template #default="{ row: method }">
-                    <el-button link type="primary" @click="handleSetRoles(method.MethodName, method.MethodTargetKey)">设置角色</el-button>
-                    <el-button
+                    <el-button v-permission="'RpcAuthorizationService.SetRpcRoles'" link type="primary" @click="handleSetRoles(method.MethodName, method.MethodTargetKey)">设置角色</el-button>
+                    <el-button v-permission="'RpcAuthorizationService.RemoveRpcRoles'"
                       link
                       type="danger"
                       :disabled="getRoleCodes(method.MethodTargetKey).length === 0"
@@ -71,8 +72,8 @@
         </el-table-column>
         <el-table-column label="操作" width="160" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="handleSetRoles(row.ServiceName, row.ClassTargetKey)">设置角色</el-button>
-            <el-button
+            <el-button v-permission="'RpcAuthorizationService.SetRpcRoles'" link type="primary" @click="handleSetRoles(row.ServiceName, row.ClassTargetKey)">设置角色</el-button>
+            <el-button v-permission="'RpcAuthorizationService.RemoveRpcRoles'"
               link
               type="danger"
               :disabled="getRoleCodes(row.ClassTargetKey).length === 0"

@@ -18,7 +18,7 @@ namespace TSMQServer.Core.Imp.Plugins;
 /// <summary>
 /// MQTT 消息丢弃统计插件，实现 <see cref="IMqttMessageDiscardedPlugin"/>，统计各类丢弃原因的消息数量。
 /// </summary>
-internal class MqttMessageDiscardPlugin : PluginBase, IMqttMessageDiscardedPlugin
+internal class MqttMessageDiscardPlugin(TSMQServer.Core.Imp.Services.MqttDiagnostics diagnostics) : PluginBase, IMqttMessageDiscardedPlugin
 {
     private long m_expired;
     private DateTime m_lastResetAt = DateTime.UtcNow;
@@ -44,6 +44,7 @@ internal class MqttMessageDiscardPlugin : PluginBase, IMqttMessageDiscardedPlugi
     public Task OnMqttMessageDiscarded(IMqttSession client, MqttMessageDiscardedEventArgs e)
     {
         Interlocked.Increment(ref this.m_total);
+        diagnostics.Record("Discarded", e.ClientId, topic: e.Message.TopicName, detail: e.Reason.ToString());
         switch (e.Reason)
         {
             case DiscardReason.QueueFull:

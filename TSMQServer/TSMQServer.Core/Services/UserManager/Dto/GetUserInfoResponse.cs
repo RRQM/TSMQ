@@ -17,6 +17,8 @@ namespace TSMQServer.Core;
 /// </summary>
 public class GetUserInfoResponse : ResponseBase
 {
+    /// <summary>当前允许调用的 RPC 方法。</summary>
+    public List<string> Permissions { get; set; } = [];
     /// <summary>
     /// 用户信息
     /// </summary>

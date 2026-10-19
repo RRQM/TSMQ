@@ -42,7 +42,7 @@
             <el-tag type="success" effect="dark">
               监控中 {{ monitoringTopics.length }} 个主题
             </el-tag>
-            <el-button @click="handleResetStats" :loading="resetLoading">
+            <el-button v-permission="'MqttTopicManagerService.ResetMqttTopicStats'" @click="handleResetStats" :loading="resetLoading">
               <el-icon><RefreshLeft /></el-icon>
               重置计数
             </el-button>

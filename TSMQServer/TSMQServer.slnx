@@ -8,4 +8,5 @@
   <Project Path="TSMQServer.Db.Sqlite/TSMQServer.Db.Sqlite.csproj" />
   <Project Path="TSMQServer.Db/TSMQServer.Db.csproj" />
   <Project Path="TSMQServer.Web/TSMQServer.Web.csproj" />
+  <Project Path="Tests/TSMQServer.Integration.Tests/TSMQServer.Integration.Tests.csproj" />
 </Solution>

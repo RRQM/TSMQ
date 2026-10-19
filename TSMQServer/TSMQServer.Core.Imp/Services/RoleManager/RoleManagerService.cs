@@ -61,6 +61,7 @@ public partial class RoleManagerService : TransientRpcServer, IRoleManagerServic
 
         var roleDto = new RoleInfo
         {
+            IsEnabled = true,
             RoleName = request.RoleName,
             RoleCode = request.RoleCode,
             Description = request.Description
@@ -97,6 +98,8 @@ public partial class RoleManagerService : TransientRpcServer, IRoleManagerServic
             LogUpdateRoleNotFound(this.m_logger, request.RoleId);
             return response.FromFail("角色不存在");
         }
+        if (roleDto.RoleCode == "admin" && request.IsEnabled == false)
+            return response.FromFail("不能禁用内置管理员角色");
 
         if (!string.IsNullOrEmpty(request.RoleName))
         {
@@ -131,6 +134,8 @@ public partial class RoleManagerService : TransientRpcServer, IRoleManagerServic
 
         var response = new ResponseBase();
 
+        var existing = await this.m_roleManager.GetRoleByIdAsync(request.RoleId);
+        if (existing?.RoleCode == "admin") return response.FromFail("不能删除内置管理员角色");
         var result = await this.m_roleManager.DeleteRoleAsync(request.RoleId);
         if (!result)
         {

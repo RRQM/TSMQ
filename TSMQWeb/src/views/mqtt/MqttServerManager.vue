@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="mqtt-server-manager">
     <el-tabs v-model="activeTab">
       <el-tab-pane label="服务器列表" name="servers">
@@ -6,7 +6,7 @@
           <template #header>
             <div class="card-header">
               <span>MQTT 服务器管理</span>
-              <el-button type="primary" @click="handleAdd">
+              <el-button v-permission="'MqttServerManagerService.AddMqttServer'" type="primary" @click="handleAdd">
                 <el-icon><Plus /></el-icon>
                 添加服务器
               </el-button>
@@ -49,9 +49,9 @@
             </el-table-column>
             <el-table-column label="操作" width="200" fixed="right" align="center">
               <template #default="{ row }">
-                <el-button v-if="!row.IsRunning" link type="success" @click="handleStart(row)">启动</el-button>
-                <el-button v-if="row.IsRunning" link type="warning" @click="handleStop(row)">停止</el-button>
-                <el-button link type="danger" @click="handleRemove(row)">移除</el-button>
+                <el-button v-permission="'MqttServerManagerService.StartMqttServer'" v-if="!row.IsRunning" link type="success" @click="handleStart(row)">启动</el-button>
+                <el-button v-permission="'MqttServerManagerService.StopMqttServer'" v-if="row.IsRunning" link type="warning" @click="handleStop(row)">停止</el-button>
+                <el-button v-permission="'MqttServerManagerService.RemoveMqttServer'" link type="danger" @click="handleRemove(row)">移除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -62,14 +62,14 @@
           <template #header>
             <div class="card-header">
               <span>连接授权用户管理</span>
-              <el-button type="primary" @click="handleAddAuthUser">
+              <el-button v-permission="'MqttServerManagerService.AddMqttAuthUser'" type="primary" @click="handleAddAuthUser">
                 <el-icon><Plus /></el-icon>
                 添加用户
               </el-button>
             </div>
           </template>
           <el-alert type="info" :closable="false" style="margin-bottom: 16px"
-            title="配置允许连接的用户名和密码。启用授权后，未配置的客户端将被拒绝连接。" />
+            title="在「MQTT访问控制」页设置是否验证账号密码。此处维护允许连接的用户；修改认证用户会断开现有连接。" />
           <el-table :data="authUserList" border stripe v-loading="authLoading">
             <el-table-column prop="UserName" label="用户名" min-width="160" />
             <el-table-column prop="Remark" label="备注" min-width="200" show-overflow-tooltip>
@@ -80,8 +80,8 @@
             </el-table-column>
             <el-table-column label="操作" width="160" fixed="right" align="center">
               <template #default="{ row }">
-                <el-button link type="primary" @click="handleEditAuthUser(row)">编辑</el-button>
-                <el-button link type="danger" @click="handleDeleteAuthUser(row)">删除</el-button>
+                <el-button v-permission="'MqttServerManagerService.UpdateMqttAuthUser'" link type="primary" @click="handleEditAuthUser(row)">编辑</el-button>
+                <el-button v-permission="'MqttServerManagerService.DeleteMqttAuthUser'" link type="danger" @click="handleDeleteAuthUser(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -92,7 +92,7 @@
           <template #header>
             <div class="card-header">
               <span>MQTT Broker 参数设置</span>
-              <el-button type="primary" @click="handleSaveBrokerSettings" :loading="brokerSaving">保存设置</el-button>
+              <el-button v-permission="'MqttServerManagerService.SetMqttBrokerSettings'" type="primary" @click="handleSaveBrokerSettings" :loading="brokerSaving">保存设置</el-button>
             </div>
           </template>
           <el-alert type="info" :closable="false" style="margin-bottom: 16px"
@@ -120,7 +120,7 @@
               <span>消息丢弃统计</span>
               <div>
                 <el-button @click="loadDiscardedStats" :loading="discardLoading">刷新</el-button>
-                <el-button type="danger" @click="handleResetDiscardedStats" :loading="discardResetting" style="margin-left: 8px">重置统计</el-button>
+                <el-button v-permission="'MqttServerManagerService.ResetMqttDiscardedStats'" type="danger" @click="handleResetDiscardedStats" :loading="discardResetting" style="margin-left: 8px">重置统计</el-button>
               </div>
             </div>
           </template>
@@ -144,7 +144,7 @@
           <template #header>
             <div class="card-header">
               <span>SSL 证书管理</span>
-              <el-button type="primary" @click="handleAddCert">
+              <el-button v-permission="'MqttServerManagerService.AddMqttSslCert'" type="primary" @click="handleAddCert">
                 <el-icon><Plus /></el-icon>
                 上传证书
               </el-button>
@@ -173,7 +173,7 @@
             </el-table-column>
             <el-table-column label="操作" width="100" fixed="right" align="center">
               <template #default="{ row }">
-                <el-button link type="danger" @click="handleDeleteCert(row)">删除</el-button>
+                <el-button v-permission="'MqttServerManagerService.DeleteMqttSslCert'" link type="danger" @click="handleDeleteCert(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -263,7 +263,7 @@
           <el-input v-model="authForm.UserName" placeholder="请输入用户名" :disabled="authEditMode" />
         </el-form-item>
         <el-form-item label="密码" prop="Password">
-          <el-input v-model="authForm.Password" placeholder="请输入密码" type="password" show-password />
+          <el-input v-model="authForm.Password" :placeholder="authEditMode ? '留空保持原密码' : '请输入密码'" type="password" show-password />
         </el-form-item>
         <el-form-item label="备注" prop="Remark">
           <el-input v-model="authForm.Remark" placeholder="可选备注信息" />
@@ -328,7 +328,7 @@ const formRules = {
 
 const authFormRules = {
   UserName: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  Password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+  Password: [{ validator: (_, value, callback) => { if (!authEditMode.value && !value) callback(new Error('请输入密码')); else callback() }, trigger: 'blur' }]
 }
 
 const certFormRules = {

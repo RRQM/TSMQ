@@ -27,17 +27,19 @@ namespace TSMQServer.Core.Imp.Services;
 public partial class MqttServerManagerService : TransientRpcServer, IMqttServerManagerService
 {
     private readonly IMqttConnectAuthFromDB m_authFromDB;
+    private readonly MqttAccessManager m_access;
     private readonly ILogger<MqttServerManagerService> m_logger;
     private readonly IMqttServerHostService m_mqttHostService;
 
     /// <summary>
     /// <inheritdoc/>
     /// </summary>
-    public MqttServerManagerService(ILogger<MqttServerManagerService> logger, IMqttServerHostService mqttHostService, IMqttConnectAuthFromDB authFromDB)
+    public MqttServerManagerService(ILogger<MqttServerManagerService> logger, IMqttServerHostService mqttHostService, IMqttConnectAuthFromDB authFromDB, MqttAccessManager access)
     {
         this.m_logger = logger;
         this.m_mqttHostService = mqttHostService;
         this.m_authFromDB = authFromDB;
+        this.m_access = access;
     }
 
     /// <inheritdoc/>
@@ -165,6 +167,7 @@ public partial class MqttServerManagerService : TransientRpcServer, IMqttServerM
         };
 
         var success = await this.m_authFromDB.AddAsync(info);
+        if (success) await this.m_access.RevokeAsync();
         return success
             ? response.FromSuccess("添加成功")
             : response.FromFail("用户名已存在");
@@ -180,11 +183,6 @@ public partial class MqttServerManagerService : TransientRpcServer, IMqttServerM
             return response.FromFail("用户名不能为空");
         }
 
-        if (string.IsNullOrWhiteSpace(request.Password))
-        {
-            return response.FromFail("密码不能为空");
-        }
-
         var info = new MqttAuthUserInfo
         {
             UserName = request.UserName,
@@ -193,6 +191,7 @@ public partial class MqttServerManagerService : TransientRpcServer, IMqttServerM
         };
 
         var success = await this.m_authFromDB.UpdateAsync(info);
+        if (success) await this.m_access.RevokeAsync();
         return success
             ? response.FromSuccess("更新成功")
             : response.FromFail("用户不存在");
@@ -209,6 +208,7 @@ public partial class MqttServerManagerService : TransientRpcServer, IMqttServerM
         }
 
         var success = await this.m_authFromDB.DeleteAsync(request.UserName);
+        if (success) await this.m_access.RevokeAsync();
         return success
             ? response.FromSuccess("删除成功")
             : response.FromFail("用户不存在");

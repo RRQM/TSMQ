@@ -94,10 +94,9 @@ public interface IMqttServerHostService
     void ResetTopicStats(IEnumerable<string> topics);
 
     /// <summary>
-    /// 设置连接授权是否启用（启用时仅允许配置的用户名密码连接）。
+    /// 发送管理端调试消息。
     /// </summary>
-    /// <param name="enabled">是否启用授权。</param>
-    void SetAuthEnabled(bool enabled);
+    Task<int> PublishMessageAsync(string topic, ReadOnlyMemory<byte> payload, int qos, bool retain);
 
     /// <summary>
     /// 获取 Broker 当前参数设置。

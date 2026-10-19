@@ -20,5 +20,7 @@ public enum ResponseCode
     Fail,
     Success,
     Error,
-    Unknown
+    Unknown,
+    Unauthorized,
+    Forbidden
 }

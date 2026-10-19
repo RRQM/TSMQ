@@ -5,6 +5,7 @@ import logger from '@/utils/logger'
 
 interface UserInfo {
   account: string
+  username?: string
 }
 
 interface UserState {
@@ -39,8 +40,9 @@ export const useUserStore = defineStore('user', {
         if (res.LoginedToken) {
           this.token = res.LoginedToken
           localStorage.setItem('token', res.LoginedToken)
-          this.userInfo = { account: loginData.Account }
+          this.userInfo = null
           this.permissions = []
+          await this.getUserInfo()
           logger.info('UserStore', '用户登录成功', { account: loginData.Account })
         }
         return res
@@ -63,6 +65,9 @@ export const useUserStore = defineStore('user', {
     },
 
     async getUserInfo(): Promise<UserInfo | null> {
+      const res = await userApi.getUserInfo() as any
+      this.userInfo = { account: res.User.Account, username: res.User.UserName || res.User.Account }
+      this.permissions = res.Permissions || []
       return this.userInfo
     },
 

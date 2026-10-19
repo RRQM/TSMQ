@@ -19,9 +19,9 @@ namespace TSMQServer.Db.Sqlite.Extensions;
 
 public static class TSMQServerDbSqliteExtension
 {
-    public static void UseSqliteDb(this IServiceCollection services)
+    public static void UseSqliteDb(this IServiceCollection services, string dbPath = "TSMQ.db")
     {
-        var dbInitializer = new SqliteDbInitializer();
+        var dbInitializer = new SqliteDbInitializer(dbPath);
         dbInitializer.Initialize();
 
         services.AddTransient<OrmClient>(p => dbInitializer.CreateOrmClient());
@@ -44,6 +44,7 @@ public static class TSMQServerDbSqliteExtension
         services.AddTransient<IMqttSslCertFromDB, MqttSslCertFromDB>();
         services.AddTransient<IMqttStatsSnapshotFromDB, MqttStatsSnapshotFromDB>();
         services.AddTransient<IBrokerSettingsFromDB, BrokerSettingsFromDB>();
+        services.AddTransient<IMqttAccessPolicyFromDB, MqttAccessPolicyFromDB>();
     }
 }
 

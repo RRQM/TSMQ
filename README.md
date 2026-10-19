@@ -170,7 +170,7 @@
 │  提取 LoginedToken│
 │         │         │
 │         ▼         │
-│  JWT 验证 Token   ├─── 非法 ──→ 返回 401 Unauthorized
+│  JWT 验证 Token   ├─── 非法 ──→ 返回 Unauthorized
 │  有效性           │
 │         │ 有效    │
 │         ▼         │
@@ -180,11 +180,11 @@
 │    │  (Class.Method)│
 │    ├─ 类级键      │
 │    │  (Class)     │
-│    └─ 数据库无配置──┼─── 默认放行
+│    └─ 数据库无配置──┼─── 默认拒绝（admin、个人接口除外）
 │         │         │
 │         ▼         │
 │  当前用户角色     │
-│  是否匹配？       ├─── 不匹配 ──→ 返回 403 Forbidden
+│  是否匹配？       ├─── 不匹配 ──→ 返回 Forbidden
 │                   │
 │  匹配             │
 └────────┬──────────┘
@@ -199,6 +199,8 @@
 │  ExceptionFilter  │  ← 捕获未处理异常，统一返回错误响应
 └───────────────────┘
 ```
+
+管理接口每次调用均验证数据库登录会话、用户启用状态及当前启用角色。退出登录、修改密码、删除用户后，旧会话不再有效；角色调整无需重新登录。方法级授权优先，无方法级授权时继承服务级授权；`admin` 始终允许访问，`GetUserInfo`、`ChangePassword`、`Logout` 对所有有效登录用户开放。
 
 ### MQTT Broker 架构
 
@@ -490,6 +492,16 @@ dotnet run --project UI/TSMQClient.Winform
 |------|------|------|
 | `admin` | `admin123` | 管理员 (admin) |
 
+### MQTT 访问控制与排障
+
+MQTT 与管理后台使用独立账号。升级后 MQTT **默认开启账号密码验证**，请先在「MQTT服务器 → 连接授权」创建设备账号，再连接 TCP 或 WebSocket 监听器。
+
+「MQTT访问控制」可配置认证开关、主题 ACL 和消息内容采集。ACL 默认关闭；开启后未匹配允许规则则拒绝，拒绝规则优先，支持 `+`、`#`，暂不支持 `$share`。订阅范围必须完整包含于一条允许规则且不能与拒绝规则重叠；遗嘱主题同样验证发布权限。重复在线 ClientId 会被拒绝。
+
+保存访问策略或增删改设备账号会断开现有连接、清除旧订阅及会话队列，设备需重新连接并订阅。管理端撤销连接不会发送旧策略下的遗嘱。
+
+「MQTT消息排障」提供连接拒绝原因、发布/订阅拒绝、消息接收及丢弃事件，支持按主题和 ClientId 查询、文本/JSON/Hex 查看与导出。最近 1000 条事件仅保存在内存，重启清空；负载默认不采集，开启后每条最多记录 4 KiB。调试发布需独立 RPC 权限，可向任意合法主题发布，负载最多 64 KiB，当前不支持 Retain 存储。
+
 ### 启动顺序速查
 
 ```
@@ -621,6 +633,7 @@ http://localhost:7789/swagger
 | `MqttSslCerts` | SSL 证书表 | Id, Name, CertType(PFX/PEM), CertData, Password |
 | `MqttStatsSnapshots` | 统计快照表 | Id, SnapshotTime, OnlineClients, ActiveTopics, RunningServers, MessagesIn, MessagesOut |
 | `BrokerSettings` | Broker 参数配置表 | Id, MaxMessageCapacity, MessageExpireMinutes, SessionExpireMinutes |
+| `MqttAccessPolicy` | MQTT 认证和主题访问策略 | Id, PolicyJson |
 
 ### 种子数据
 

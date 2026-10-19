@@ -18,6 +18,8 @@ namespace TSMQServer.Db.Sqlite;
 
 public class UserManagerFromDB: IUserManagerFromDB
 {
+    /// <inheritdoc/>
+    public async Task LogoutAsync(string loginToken) => await this.m_loginSessionRepository.DeleteAsync(loginToken);
     private readonly LoginSessionRepository m_loginSessionRepository;
     private readonly UserRepository m_userRepository;
 
@@ -43,7 +45,9 @@ public class UserManagerFromDB: IUserManagerFromDB
         }
         entity.Password = newPassword;
         entity.UpdateTime = DateTime.Now;
-        return await this.m_userRepository.UpdateAsync(entity);
+        var changed = await this.m_userRepository.UpdateAsync(entity);
+        if (changed) await this.m_loginSessionRepository.DeleteByAccountAsync(entity.Account);
+        return changed;
     }
 
     public async Task<bool> DeleteUserAsync(long userId)
@@ -69,6 +73,11 @@ public class UserManagerFromDB: IUserManagerFromDB
             Id = userEntity.Id,
             Account = userEntity.Account,
             Password = userEntity.Password,
+            IsEnabled = userEntity.Status == 1,
+            UserName = userEntity.NickName,
+            Email = userEntity.Email,
+            Phone = userEntity.Phone,
+            CreateTime = userEntity.CreateTime,
             RoleIds = userEntity.RoleIds
         };
     }
@@ -137,6 +146,11 @@ public class UserManagerFromDB: IUserManagerFromDB
                     Id = userEntity.Id,
                     Account = userEntity.Account,
                     Password = userEntity.Password,
+                    IsEnabled = userEntity.Status == 1,
+                    UserName = userEntity.NickName,
+                    Email = userEntity.Email,
+                    Phone = userEntity.Phone,
+                    CreateTime = userEntity.CreateTime,
                     RoleIds = userEntity.RoleIds
                 };
                 return (true, userInfo);
@@ -157,6 +171,11 @@ public class UserManagerFromDB: IUserManagerFromDB
                 Id = userEntity.Id,
                 Account = userEntity.Account,
                 Password = userEntity.Password,
+                IsEnabled = userEntity.Status == 1,
+                UserName = userEntity.NickName,
+                Email = userEntity.Email,
+                Phone = userEntity.Phone,
+                CreateTime = userEntity.CreateTime,
                 RoleIds = userEntity.RoleIds
             };
             return (true, userInfo);

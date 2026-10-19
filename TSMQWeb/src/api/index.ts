@@ -6,7 +6,7 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  Code: 'Success' | 'Fail' | 'Error' | 'Unknown'
+  Code: 'Success' | 'Fail' | 'Error' | 'Unknown' | 'Unauthorized' | 'Forbidden'
   Message: string
   LoginedToken?: string
 }
@@ -18,7 +18,7 @@ export interface RegisterRequest {
 }
 
 export interface ResponseBase<T = any> {
-  Code: 'Success' | 'Fail' | 'Error' | 'Unknown'
+  Code: 'Success' | 'Fail' | 'Error' | 'Unknown' | 'Unauthorized' | 'Forbidden'
   Message: string
   Data?: T
 }
@@ -44,6 +44,9 @@ export interface RpcMethodRoleInfo {
 }
 
 export const userApi = {
+  logout() {
+    return request({ url: '/IUserManagerService/Logout', method: 'post', data: {} })
+  },
   login(data: LoginRequest) {
     return request<LoginResponse>({
       url: '/IUserManagerService/Login',

@@ -58,7 +58,7 @@ public class MqttConnectAuthFromDB : IMqttConnectAuthFromDB
         {
             return false;
         }
-        existing.PasswordHash = info.Password;
+        if (!string.IsNullOrEmpty(info.Password)) existing.PasswordHash = info.Password;
         existing.Remark = info.Remark ?? string.Empty;
         return await this.m_repository.UpdateAsync(existing);
     }
@@ -85,7 +85,7 @@ public class MqttConnectAuthFromDB : IMqttConnectAuthFromDB
         return new MqttAuthUserInfo
         {
             UserName = entity.UserName,
-            Password = entity.PasswordHash,
+            Password = string.Empty,
             Remark = entity.Remark,
             CreatedAt = entity.CreatedAt
         };

@@ -47,6 +47,7 @@ public class UserInfo
     /// </summary>
     public DateTime? LastLoginTime { get; set; }
 
+    [System.Text.Json.Serialization.JsonIgnore]
     public string Password { get; set; } = string.Empty;
 
     /// <summary>

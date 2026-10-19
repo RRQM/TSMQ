@@ -15,7 +15,7 @@ using TouchSocket.Core;
 using TouchSocket.Http;
 using TouchSocket.Mqtt;
 using TouchSocket.Sockets;
-using TSMQServer.Db;
+using TSMQServer.Core.Imp.Services;
 
 namespace TSMQServer.Core.Imp.Plugins;
 
@@ -23,7 +23,6 @@ namespace TSMQServer.Core.Imp.Plugins;
 /// MQTT 连接事件插件，负责处理客户端连接、断开及消息接收的业务逻辑。
 /// </summary>
 internal class MqttServerPlugin : PluginBase,
-    IMqttConnectingPlugin,
     IMqttConnectedPlugin,
     IMqttClosedPlugin,
     IMqttReceivedPlugin
@@ -31,16 +30,15 @@ internal class MqttServerPlugin : PluginBase,
     private static readonly DependencyProperty<MqttClientSessionData?> s_sessionDataProperty =
         new("MqttClientSessionData", default);
 
-    private readonly IMqttConnectAuthFromDB m_authFromDB;
+    private readonly MqttAccessManager m_access;
     private readonly Action<string, long> m_trackInflow;
-    private volatile bool m_authEnabled;
 
     /// <summary>
     /// <inheritdoc cref="MqttServerPlugin"/>
     /// </summary>
-    public MqttServerPlugin(IMqttConnectAuthFromDB authFromDB, Action<string, long> trackInflow)
+    public MqttServerPlugin(MqttAccessManager access, Action<string, long> trackInflow)
     {
-        this.m_authFromDB = authFromDB;
+        this.m_access = access;
         this.m_trackInflow = trackInflow;
     }
 
@@ -48,34 +46,6 @@ internal class MqttServerPlugin : PluginBase,
     /// 获取存储客户端会话数据的依赖属性，供外部读取已连接客户端信息。
     /// </summary>
     public static DependencyProperty<MqttClientSessionData?> SessionDataProperty => s_sessionDataProperty;
-
-    /// <summary>
-    /// 设置连接授权开关。
-    /// </summary>
-    public void SetAuthEnabled(bool enabled)
-    {
-        this.m_authEnabled = enabled;
-    }
-
-    /// <inheritdoc/>
-    public async Task OnMqttConnecting(IMqttSession client, MqttConnectingEventArgs e)
-    {
-        if (this.m_authEnabled)
-        {
-            var msg = e.ConnectMessage;
-            var userName = msg.UserName ?? string.Empty;
-            var password = msg.Password ?? string.Empty;
-            var valid = await this.m_authFromDB.ValidateAsync(userName, password).ConfigureAwait(false);
-            if (!valid)
-            {
-                e.ConnAckMessage.ReturnCode = MqttReasonCode.NotAuthorized;
-                return;
-            }
-        }
-
-        e.ConnAckMessage.ReturnCode = MqttReasonCode.ConnectionAccepted;
-        await e.InvokeNext();
-    }
 
     /// <inheritdoc/>
     public async Task OnMqttConnected(IMqttSession client, MqttConnectedEventArgs e)
@@ -115,6 +85,7 @@ internal class MqttServerPlugin : PluginBase,
         if (e.MqttMessage is MqttArrivedMessage arrivedMsg)
         {
             this.m_trackInflow(arrivedMsg.TopicName, arrivedMsg.Payload.Length);
+            this.m_access.RecordMessage(client, arrivedMsg);
         }
 
         await e.InvokeNext();

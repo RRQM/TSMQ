@@ -13,56 +13,59 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     component: () => import('@/layout/MainLayout.vue'),
-    redirect: '/dashboard',
+    redirect: '/account',
     meta: { requiresAuth: true },
     children: [
+      { path: 'account', name: 'Account', component: () => import('@/views/Account.vue'), meta: { title: '当前账号', icon: 'User' } },
+      { path: 'mqtt-access', name: 'MqttAccess', component: () => import('@/views/mqtt/MqttAccessControl.vue'), meta: { title: 'MQTT访问控制', icon: 'Lock', permission: 'MqttAccessService.GetMqttAccessPolicy' } },
+      { path: 'mqtt-diagnostics', name: 'MqttDiagnostics', component: () => import('@/views/mqtt/MqttDiagnostics.vue'), meta: { title: 'MQTT消息排障', icon: 'Search', permission: 'MqttAccessService.GetMqttDiagnostics' } },
       {
         path: 'dashboard',
         name: 'Dashboard',
         component: () => import('@/views/Dashboard.vue'),
-        meta: { title: '首页', icon: 'House' }
+        meta: { title: '首页', permission: 'MqttServerManagerService.GetMqttDashboardStats', icon: 'House' }
       },
       {
         path: 'users',
         name: 'Users',
         component: () => import('@/views/user/UserList.vue'),
-        meta: { title: '用户管理', icon: 'User' }
+        meta: { title: '用户管理', permission: 'UserManagerService.GetUserList', icon: 'User' }
       },
       {
         path: 'roles',
         name: 'Roles',
         component: () => import('@/views/role/RoleList.vue'),
-        meta: { title: '角色管理', icon: 'UserFilled' }
+        meta: { title: '角色管理', permission: 'RoleManagerService.GetRoleList', icon: 'UserFilled' }
       },
       {
         path: 'rpc-roles',
         name: 'RpcRoles',
         component: () => import('@/views/rpc-authorization/RpcMethodRoleManager.vue'),
-        meta: { title: 'RPC角色授权', icon: 'Setting' }
+        meta: { title: 'RPC角色授权', permission: 'RpcAuthorizationService.GetAllRpcMethods', icon: 'Setting' }
       },
       {
         path: 'logs',
         name: 'Logs',
         component: () => import('@/views/LogViewer.vue'),
-        meta: { title: '系统日志', icon: 'Document' }
+        meta: { title: '系统日志', permission: 'LogManagerService.GetLogList', icon: 'Document' }
       },
       {
         path: 'mqtt-servers',
         name: 'MqttServers',
         component: () => import('@/views/mqtt/MqttServerManager.vue'),
-        meta: { title: 'MQTT服务器', icon: 'Connection' }
+        meta: { title: 'MQTT服务器', permission: 'MqttServerManagerService.GetMqttServerList', icon: 'Connection' }
       },
       {
         path: 'mqtt-clients',
         name: 'MqttClients',
         component: () => import('@/views/mqtt/MqttClientList.vue'),
-        meta: { title: 'MQTT客户端', icon: 'Monitor' }
+        meta: { title: 'MQTT客户端', permission: 'MqttClientManagerService.GetMqttClientList', icon: 'Monitor' }
       },
       {
         path: 'mqtt-topics',
         name: 'MqttTopics',
         component: () => import('@/views/mqtt/MqttTopicMonitor.vue'),
-        meta: { title: 'MQTT主题监控', icon: 'DataAnalysis' }
+        meta: { title: 'MQTT主题监控', permission: 'MqttTopicManagerService.GetMqttTopicList', icon: 'DataAnalysis' }
       }
     ]
   }
@@ -87,7 +90,7 @@ router.beforeEach(async (to, _from, next) => {
       return
     }
 
-    if (!userStore.userInfo) {
+    {
       logger.debug('Router', '尝试获取用户信息')
       try {
         await userStore.getUserInfo()
@@ -101,6 +104,10 @@ router.beforeEach(async (to, _from, next) => {
 
   }
 
+  if (to.meta.permission && !userStore.hasPermission(String(to.meta.permission))) {
+    next('/account')
+    return
+  }
   logger.info('Router', `导航成功: ${to.path}`)
   next()
 })
