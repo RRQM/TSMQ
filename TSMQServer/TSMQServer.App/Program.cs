@@ -13,6 +13,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting.WindowsServices;
 using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
 using TSMQServer.App.Plugins;
@@ -34,8 +35,15 @@ internal class Program
 {
     private static async Task Main(string[] args)
     {
-        var builder = Host.CreateApplicationBuilder(args);
-        builder.Environment.ContentRootPath = AppContext.BaseDirectory;
+        if (!WindowsServiceHelpers.IsWindowsService())
+        {
+            Console.OutputEncoding = new UTF8Encoding(false);
+        }
+        var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
+        {
+            Args = args,
+            ContentRootPath = AppContext.BaseDirectory
+        });
         builder.Services.UseSqliteDb();
         builder.Services.AddTSMQServerCoreImp(builder.Configuration);
 
@@ -131,7 +139,9 @@ internal class Program
                });
         });
 
-        var host = builder.Build();
+        builder.Services.AddHostedService<StartupReporter>();
+
+        using var host = builder.Build();
         await host.RunAsync();
     }
 }
