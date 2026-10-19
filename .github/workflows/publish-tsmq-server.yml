@@ -1,6 +1,7 @@
 name: Publish TSMQ Server
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'Directory.Build.props'
@@ -70,6 +71,8 @@ jobs:
           push: false
           platforms: ${{ matrix.platform }}
           tags: tsmq-server:${{ needs.extract-version.outputs.version }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           outputs: type=docker,dest=tsmq-server-docker-${{ matrix.arch }}-${{ needs.extract-version.outputs.version }}.tar
           build-args: |
             RUNTIME_ID=${{ matrix.runtime-id }}
