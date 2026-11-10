@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'Directory.Build.props'
+      - 'src/Directory.Build.props'
 
 jobs:
   extract-version:
@@ -20,7 +20,7 @@ jobs:
       - name: Get version from Directory.Build.props
         id: get_version
         run: |
-          VERSION=$(grep -oP '(?<=<Version>)[^<]+' Directory.Build.props)
+          VERSION=$(grep -oP '(?<=<Version>)[^<]+' src/Directory.Build.props)
           echo "Detected version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
@@ -67,7 +67,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: TSMQServer/Dockerfile
+          file: src/TSMQServer/Dockerfile
           push: false
           platforms: ${{ matrix.platform }}
           tags: tsmq-server:${{ needs.extract-version.outputs.version }}
@@ -104,7 +104,7 @@ jobs:
           node-version: '22'
 
       - name: Build frontend (TSMQWeb)
-        working-directory: TSMQWeb
+        working-directory: src/TSMQWeb
         run: |
           npm install --ignore-scripts
           npm run build
@@ -116,7 +116,7 @@ jobs:
 
       - name: Publish Windows x64 AOT
         run: |
-          dotnet publish TSMQServer/TSMQServer.App/TSMQServer.App.csproj `
+          dotnet publish src/TSMQServer/TSMQServer.App/TSMQServer.App.csproj `
             -c Release `
             -r win-x64 `
             --self-contained true `
@@ -149,7 +149,7 @@ jobs:
           node-version: '22'
 
       - name: Build frontend (TSMQWeb)
-        working-directory: TSMQWeb
+        working-directory: src/TSMQWeb
         run: |
           npm install --ignore-scripts
           npm run build
@@ -161,7 +161,7 @@ jobs:
 
       - name: Publish macOS ARM64 AOT
         run: |
-          dotnet publish TSMQServer/TSMQServer.App/TSMQServer.App.csproj \
+          dotnet publish src/TSMQServer/TSMQServer.App/TSMQServer.App.csproj \
             -c Release \
             -r osx-arm64 \
             --self-contained true \
