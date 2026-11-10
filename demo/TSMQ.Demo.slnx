@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../src/TSMQServer/TSMQServer.Core/TSMQServer.Core.csproj" />
+  <Project Path="TSMQ.ManagementConsole/TSMQ.ManagementConsole.csproj" />
+</Solution>

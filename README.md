@@ -4,7 +4,7 @@
 
 连接设备、查看消息流量、配置访问权限、定位通信问题，都可以在浏览器中完成。适用于物联网接入、边缘网关、设备联调和小型消息服务部署，基于 [TouchSocket](https://touchsocket.net/) 构建。
 
-[下载最新版本](https://github.com/RRQM/TSMQ/releases) · [下载并运行](#下载并运行) · [看看能做什么](#web-管理一览) · [开源协议](LICENSE)
+[下载最新版本](https://github.com/RRQM/TSMQ/releases) · [下载并运行](#下载并运行) · [看看能做什么](#web-管理一览) · [C# 客户端集成](#c-直接调用管理功能) · [开源协议](LICENSE)
 
 ![TSMQ Web 管理首页：在线设备、消息流量、数据吞吐与 Broker 运行概览](docs/images/web-dashboard-light.jpg)
 
@@ -144,6 +144,39 @@ docker run -d \
 | 配置主题消息存储、保留期限并查询历史 | MQTT消息持久化 |
 | 管理团队账号和操作权限 | 用户管理 / 角色管理 / RPC角色授权 |
 | 查服务端异常和运行记录 | 系统日志 |
+
+## C# 直接调用管理功能
+
+除了 Web 控制台，TSMQ 也支持 **C# 直接引用客户端 DLL，以强类型 API 调用 Web 管理端背后的服务能力**，无需打开浏览器，也无需手写 HTTP 请求。适合将管理能力集成到自己的控制台、桌面应用、后台服务或自动化运维工具中。
+
+客户端接口和实现位于 **`TSMQServer.Core.dll`**（命名空间 `TSMQServer.Core.Clients`），不是 Avalonia 界面程序集。统一接口 `IRemoteService` 提供三种传输实现：
+
+| 实现 | 协议 | 默认管理地址 |
+| --- | --- | --- |
+| `WebApiRemoteService` | HTTP WebApi | `http://127.0.0.1:7789` |
+| `DmtpRemoteService` | DMTP RPC | `tcp://127.0.0.1:7789` |
+| `JsonRpcRemoteService` | WebSocket JSON-RPC | `ws://127.0.0.1:7789/wsjsonrpc` |
+
+这些客户端可调用统计概览、监听器增删与启停、设备连接授权、在线客户端查询与踢除、主题统计、访问控制、诊断与消息发布，以及用户、角色、RPC 权限和日志管理等接口。这里指的是服务端管理能力，不包含浏览器主题、语言、侧栏等界面偏好，也不是用于设备收发消息的 MQTT 客户端。
+
+先连接管理服务，再调用 `LoginAsync`；成功后客户端会保存登录 Token，并自动携带到后续请求中。调用结果通过 `IsSuccess`、`Message` 和泛型结果的 `Value` 获取。权限校验与 Web 控制台一致，需使用管理账号，而不是 MQTT 设备账号；不需要时调用 `LogoutAsync` 并释放底层连接。
+
+源码集成可直接引用 `src\TSMQServer\TSMQServer.Core\TSMQServer.Core.csproj`。已有 DLL 的项目可引用 `TSMQServer.Core.dll`，但必须同时部署其匹配版本的 TouchSocket 等运行依赖，不能只复制单个 DLL；源码项目引用会自动解析依赖。当前源码目标框架为 .NET 10。
+
+### 控制台示例
+
+[demo/TSMQ.ManagementConsole](demo/TSMQ.ManagementConsole) 提供可运行的 .NET 10 控制台项目，直接使用上述客户端接口，不依赖 Web 前端或 Avalonia。示例采用源码项目引用，便于在仓库中直接编译；运行时调用的仍是 `TSMQServer.Core.dll` 中的客户端实现。
+
+| 文件 | 职责 |
+| --- | --- |
+| `Program.cs` | 入口、服务地址、隐藏密码输入及退出码 |
+| `Connection\ManagementConnection.cs` | WebApi 连接、登录、注销及资源释放 |
+| `Commands\ManagementCommands.cs` | 菜单、管理 API 调用、结果输出与交互式消息发布 |
+| `TSMQ.ManagementConsole.csproj` | 控制台配置及客户端契约项目引用 |
+
+可直接打开 `demo\TSMQ.Demo.slnx` 解决方案，或在仓库根目录执行 `dotnet build .\demo\TSMQ.Demo.slnx` 编译。运行时，在仓库根目录执行 `dotnet run --project .\demo\TSMQ.ManagementConsole`，启动后依次输入管理服务地址（`http://服务器IP:管理端口`）、管理账号和密码。地址提示会显示默认值 `http://127.0.0.1:7789`，直接回车使用默认地址，也可手动输入其他地址；不接收命令行地址参数。执行前请先启动 TSMQ 服务端，并准备有相应操作权限的管理账号。密码仅在终端隐藏输入，不写入源码或命令行。
+
+菜单展示统计概览、监听器列表、在线客户端、主题监控、访问策略、最近诊断事件和消息发布。查询失败会显示服务端错误；发布消息需要显式确认，默认 QoS 0、不保留消息。示例不会自动创建或删除监听器、修改访问策略或清理服务端数据。诊断负载是否可见取决于服务端采集配置；管理端消息发布使用管理权限，不受设备主题 ACL 限制。示例使用 HTTP，请仅在可信网络中连接，跨公网应通过安全通道保护管理流量。
 
 ## 主题消息持久化
 
