@@ -19,6 +19,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'account', name: 'Account', component: () => import('@/views/Account.vue'), meta: { title: '当前账号', icon: 'User' } },
       { path: 'mqtt-access', name: 'MqttAccess', component: () => import('@/views/mqtt/MqttAccessControl.vue'), meta: { title: 'MQTT访问控制', icon: 'Lock', permission: 'MqttAccessService.GetMqttAccessPolicy' } },
       { path: 'mqtt-diagnostics', name: 'MqttDiagnostics', component: () => import('@/views/mqtt/MqttDiagnostics.vue'), meta: { title: 'MQTT消息排障', icon: 'Search', permission: 'MqttAccessService.GetMqttDiagnostics' } },
+      { path: 'mqtt-persistence', name: 'MqttPersistence', component: () => import('@/views/mqtt/MqttPersistence.vue'), meta: { title: 'MQTT消息持久化', icon: 'Document', permission: 'MqttPersistenceService.GetPolicy' } },
       {
         path: 'dashboard',
         name: 'Dashboard',

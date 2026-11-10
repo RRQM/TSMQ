@@ -43,11 +43,12 @@ const initial = computed(() => (userStore.userInfo?.account || 'U').slice(0, 1).
 const allowedRoutes = computed(() => (router.options.routes.find(r => r.path === '/')?.children || []).filter(r => !r.meta?.permission || userStore.hasPermission(String(r.meta.permission))))
 const menuGroups = computed(() => [
   { label: '总览', paths: ['dashboard'] },
-  { label: '消息服务', paths: ['mqtt-servers', 'mqtt-clients', 'mqtt-topics', 'mqtt-access', 'mqtt-diagnostics'] },
+  { label: '消息服务', paths: ['mqtt-servers', 'mqtt-clients', 'mqtt-topics', 'mqtt-access', 'mqtt-diagnostics', 'mqtt-persistence'] },
   { label: '工作空间管理', paths: ['users', 'roles', 'rpc-roles', 'logs', 'account'] }
 ].map(group => ({ ...group, items: group.paths.flatMap(path => allowedRoutes.value.filter(r => r.path === path)) })).filter(group => group.items.length))
 const searchResults = computed(() => allowedRoutes.value.filter(r => t(String(r.meta?.title)).toLowerCase().includes(search.value.toLowerCase())))
 const descriptions: Record<string, string> = {
+  MqttPersistence: '按主题保存完整消息，查询历史负载并配置自动清理周期。',
   Users: '管理工作空间成员，为每个账号分配恰当的访问权限。', Roles: '通过角色组织权限，保持团队访问边界清晰。', RpcRoles: '精确配置服务与方法的访问权限，变更即时生效。', Logs: '检索运行日志，快速定位系统异常与关键事件。',
   MqttServers: '统一管理监听器、设备凭据、证书与 Broker 参数。', MqttClients: '查看实时连接状态，管理每一个接入的设备。', MqttTopics: '洞察主题订阅与消息流量，追踪每一条数据通路。', MqttAccess: '从连接认证到主题授权，建立清晰的设备访问边界。', MqttDiagnostics: '追踪连接与消息事件，让排查问题更直接。', Account: '管理个人账号，查看当前工作空间的访问权限。'
 }

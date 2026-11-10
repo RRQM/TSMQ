@@ -38,6 +38,8 @@ public static class TSMQServerCoreImpExtension
         services.AddSingleton<NLogFileReader>();
         services.AddSingleton<MqttDiagnostics>();
         services.AddSingleton<MqttAccessManager>();
+        services.AddSingleton<MqttPersistenceManager>();
+        services.AddHostedService(sp => sp.GetRequiredService<MqttPersistenceManager>());
 
         services.AddSingleton<MqttServerHostService>();
         services.AddSingleton<IMqttServerHostService>(sp => sp.GetRequiredService<MqttServerHostService>());

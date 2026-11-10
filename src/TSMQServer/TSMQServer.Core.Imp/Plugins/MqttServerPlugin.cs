@@ -85,7 +85,7 @@ internal class MqttServerPlugin : PluginBase,
         if (e.MqttMessage is MqttArrivedMessage arrivedMsg)
         {
             this.m_trackInflow(arrivedMsg.TopicName, arrivedMsg.Payload.Length);
-            this.m_access.RecordMessage(client, arrivedMsg);
+            await this.m_access.RecordMessageAsync(client, arrivedMsg);
         }
 
         await e.InvokeNext();
