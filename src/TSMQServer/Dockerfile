@@ -9,10 +9,10 @@ RUN mkdir -p TSMQServer/TSMQServer.Web/build
 WORKDIR /workspace/TSMQWeb
 
 # Install dependencies first for better layer caching
-COPY TSMQWeb/package.json ./
+COPY src/TSMQWeb/package.json ./
 RUN npm install --ignore-scripts
 
-COPY TSMQWeb/ ./
+COPY src/TSMQWeb/ ./
 RUN npm run build
 
 # Stage 2: Build .NET application with AOT
@@ -29,8 +29,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /src
 
-COPY Directory.Build.props ./
-COPY TSMQServer/ ./TSMQServer/
+COPY src/Directory.Build.props ./
+COPY src/TSMQServer/ ./TSMQServer/
 
 # Copy frontend build output to embedded resource location
 COPY --from=frontend-build /workspace/TSMQServer/TSMQServer.Web/build ./TSMQServer/TSMQServer.Web/build/
