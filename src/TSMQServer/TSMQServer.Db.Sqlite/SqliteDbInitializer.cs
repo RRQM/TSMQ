@@ -55,8 +55,37 @@ public class SqliteDbInitializer
             await client.CodeFirst!.InitTableAsync<MqttStatsSnapshotEntity>().ConfigureAwait(false);
             await client.CodeFirst!.InitTableAsync<BrokerSettingsEntity>().ConfigureAwait(false);
             await client.CodeFirst!.InitTableAsync<MqttAccessPolicyEntity>().ConfigureAwait(false);
+            await InvalidateLegacyPasswordsAsync(client).ConfigureAwait(false);
             await SeedDefaultDataAsync(client).ConfigureAwait(false);
         }
+    }
+
+    private static async Task InvalidateLegacyPasswordsAsync(OrmClient client)
+    {
+        await client.UseTranAsync(async () =>
+        {
+            var users = await client.Queryable<UserEntity>().ToListAsync().ConfigureAwait(false);
+            foreach (var user in users.Where(u => !PasswordHasher.IsHash(u.Password)))
+            {
+                await client.Updatable<UserEntity>()
+                    .SetColumns(u => new UserEntity { Password = string.Empty })
+                    .Where(u => u.Id == user.Id)
+                    .ExecuteAsync().ConfigureAwait(false);
+                await client.Deletable<LoginSessionEntity>()
+                    .Where(s => s.Account == user.Account)
+                    .ExecuteAsync().ConfigureAwait(false);
+            }
+
+            var mqttUsers = await client.Queryable<MqttAuthUserEntity>().ToListAsync().ConfigureAwait(false);
+            foreach (var user in mqttUsers.Where(u => !string.IsNullOrEmpty(u.PasswordHash) && !PasswordHasher.IsHash(u.PasswordHash)))
+            {
+                await client.Updatable<MqttAuthUserEntity>()
+                    .SetColumns(u => new MqttAuthUserEntity { PasswordHash = string.Empty })
+                    .Where(u => u.UserName == user.UserName)
+                    .ExecuteAsync().ConfigureAwait(false);
+            }
+            return true;
+        }).ConfigureAwait(false);
     }
 
     private static IEnumerable<(string TargetKey, string RoleCodes, string Description)> GetDefaultRpcMethodRoles(string adminRoleCode)
@@ -103,7 +132,7 @@ public class SqliteDbInitializer
             await client.Insertable(new UserEntity
             {
                 Account = AdminAccount,
-                Password = AdminPassword,
+                Password = PasswordHasher.Hash(AdminPassword),
                 NickName = "管理员",
                 RoleIds = adminRole.Id.ToString(),
                 Status = 1,

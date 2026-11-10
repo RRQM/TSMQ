@@ -31,6 +31,13 @@ public class UserManagerFromDB: IUserManagerFromDB
         this.m_loginSessionRepository = loginSessionRepository;
     }
 
+    /// <inheritdoc/>
+    public async Task<bool> ValidatePasswordAsync(string account, string password)
+    {
+        var entity = await this.m_userRepository.GetByAccountAsync(account);
+        return entity != null && entity.Status == 1 && PasswordHasher.Verify(password, entity.Password);
+    }
+
     public async Task<bool> AssignUserRolesAsync(long userId, string roleIds)
     {
         return await this.m_userRepository.UpdateRoleIdsAsync(userId, roleIds);
@@ -43,7 +50,7 @@ public class UserManagerFromDB: IUserManagerFromDB
         {
             return false;
         }
-        entity.Password = newPassword;
+        entity.Password = PasswordHasher.Hash(newPassword);
         entity.UpdateTime = DateTime.Now;
         var changed = await this.m_userRepository.UpdateAsync(entity);
         if (changed) await this.m_loginSessionRepository.DeleteByAccountAsync(entity.Account);
@@ -72,7 +79,6 @@ public class UserManagerFromDB: IUserManagerFromDB
         {
             Id = userEntity.Id,
             Account = userEntity.Account,
-            Password = userEntity.Password,
             IsEnabled = userEntity.Status == 1,
             UserName = userEntity.NickName,
             Email = userEntity.Email,
@@ -124,7 +130,7 @@ public class UserManagerFromDB: IUserManagerFromDB
         var userEntity = new UserEntity
         {
             Account = userInfo.Account,
-            Password = userInfo.Password,
+            Password = PasswordHasher.Hash(userInfo.Password),
             CreateTime = DateTime.Now
         };
 
@@ -145,7 +151,6 @@ public class UserManagerFromDB: IUserManagerFromDB
                 {
                     Id = userEntity.Id,
                     Account = userEntity.Account,
-                    Password = userEntity.Password,
                     IsEnabled = userEntity.Status == 1,
                     UserName = userEntity.NickName,
                     Email = userEntity.Email,
@@ -170,7 +175,6 @@ public class UserManagerFromDB: IUserManagerFromDB
             {
                 Id = userEntity.Id,
                 Account = userEntity.Account,
-                Password = userEntity.Password,
                 IsEnabled = userEntity.Status == 1,
                 UserName = userEntity.NickName,
                 Email = userEntity.Email,
