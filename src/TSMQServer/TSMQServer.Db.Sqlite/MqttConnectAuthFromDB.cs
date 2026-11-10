@@ -58,7 +58,7 @@ public class MqttConnectAuthFromDB : IMqttConnectAuthFromDB
         {
             return false;
         }
-        if (!string.IsNullOrEmpty(info.Password)) existing.PasswordHash = info.Password;
+        if (!string.IsNullOrEmpty(info.Password)) existing.PasswordHash = PasswordHasher.Hash(info.Password);
         existing.Remark = info.Remark ?? string.Empty;
         return await this.m_repository.UpdateAsync(existing);
     }
@@ -77,7 +77,7 @@ public class MqttConnectAuthFromDB : IMqttConnectAuthFromDB
         {
             return false;
         }
-        return entity.PasswordHash == password;
+        return PasswordHasher.Verify(password, entity.PasswordHash);
     }
 
     private static MqttAuthUserInfo ToInfo(MqttAuthUserEntity entity)
@@ -96,7 +96,7 @@ public class MqttConnectAuthFromDB : IMqttConnectAuthFromDB
         return new MqttAuthUserEntity
         {
             UserName = info.UserName,
-            PasswordHash = info.Password,
+            PasswordHash = PasswordHasher.Hash(info.Password),
             Remark = info.Remark ?? string.Empty,
             CreatedAt = info.CreatedAt == default ? DateTime.UtcNow : info.CreatedAt
         };

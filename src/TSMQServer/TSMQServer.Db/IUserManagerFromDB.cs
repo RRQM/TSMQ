@@ -18,6 +18,11 @@ public interface IUserManagerFromDB
 {
     /// <summary>撤销指定登录会话。</summary>
     Task LogoutAsync(string loginToken);
+
+    /// <summary>
+    /// 校验账号密码，不返回密码存储值。
+    /// </summary>
+    Task<bool> ValidatePasswordAsync(string account, string password);
     /// <summary>
     /// 获取账号的注册信息
     /// </summary>

@@ -83,7 +83,7 @@ public partial class UserManagerService : TransientRpcServer, IUserManagerServic
             return response.FromFail("用户不存在");
         }
 
-        if (!request.OldPassword.Equals(getUserResult.userInfo.Password))
+        if (!await this.m_userManager.ValidatePasswordAsync(account!, request.OldPassword))
         {
             LogChangePasswordWrongOldPassword(this.m_logger, account);
             return response.FromFail("旧密码不正确");
@@ -172,7 +172,7 @@ public partial class UserManagerService : TransientRpcServer, IUserManagerServic
 
         if (!userInfo.IsEnabled) return response.FromFail("账号或密码不正确");
 
-        if (!request.Password.Equals(userInfo.Password))
+        if (!await this.m_userManager.ValidatePasswordAsync(request.Account, request.Password))
         {
             LogLoginWrongPassword(this.m_logger, request.Account);
             return response.FromFail("账号或密码不正确");

@@ -22,6 +22,9 @@ public sealed class UserEntity
 
     public string Account { get; set; } = string.Empty;
 
+    /// <summary>
+    /// 密码哈希；空值表示需要重置密码。
+    /// </summary>
     public string Password { get; set; } = string.Empty;
 
     public string NickName { get; set; } = string.Empty;
