@@ -12,7 +12,7 @@ using TSMQServer.Db;
 namespace TSMQServer.Core.Imp.Services;
 
 /// <summary>MQTT 认证、主题授权及连接撤销。</summary>
-public sealed class MqttAccessManager(IServiceScopeFactory scopeFactory, MqttDiagnostics diagnostics)
+public sealed class MqttAccessManager(IServiceScopeFactory scopeFactory, MqttDiagnostics diagnostics, MqttPersistenceManager persistence)
 {
     private readonly ConcurrentDictionary<IMqttSession, Connection> m_connections = new();
     private readonly ConcurrentDictionary<string, string> m_sessionOwners = new();
@@ -147,10 +147,13 @@ public sealed class MqttAccessManager(IServiceScopeFactory scopeFactory, MqttDia
     }
 
     /// <summary>记录已处理的消息。</summary>
-    public void RecordMessage(IMqttSession session, MqttArrivedMessage message)
+    public async Task RecordMessageAsync(IMqttSession session, MqttArrivedMessage message)
     {
         if (this.m_connections.TryGetValue(session, out var connection))
         {
+            if (persistence.ShouldPersist(message.TopicName))
+                await persistence.RecordAsync(message.TopicName, message.Payload.ToArray(), (int)message.QosLevel,
+                    message.Retain, connection.ClientId, connection.UserName);
             var capture = Volatile.Read(ref this.m_policy).CapturePayload;
             diagnostics.Record("Message", connection.ClientId, connection.UserName, message.TopicName, "Broker 已接收",
                 capture ? message.Payload.Slice(0, Math.Min(message.Payload.Length, 4096)).ToArray() : default,

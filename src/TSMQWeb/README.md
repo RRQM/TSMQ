@@ -11,6 +11,16 @@
 - 路由守卫：基于权限的路由拦截
 - 权限指令：v-permission 自定义指令
 
+## MQTT 消息持久化
+
+消息服务菜单中的“MQTT消息持久化”页面位于 `/mqtt-persistence`。页面访问、策略保存和历史查询分别要求 `MqttPersistenceService.GetPolicy`、`MqttPersistenceService.SavePolicy` 和 `MqttPersistenceService.QueryMessages` 权限。
+
+策略支持启停、最多 500 条主题过滤器及 1–3650 天的保留期。`+` 匹配单层，`#` 匹配多层且只能位于最后一层。匹配消息保存完整原始负载，不受诊断采集的 4 KiB 限制；过期消息由服务端每小时清理。
+
+历史查询支持主题、客户端及时间范围，时间转换为带时区的 ISO 时间提交。结果按 ID 倒序分页，首次请求 `BeforeId=0`，后续使用上一页末项 ID。Base64 查看保留二进制原貌，UTF-8 查看会提示无效文本，不替换原始数据。
+
+页面通过 POST 调用 `/IMqttPersistenceService/GetPolicy`、`SavePolicy` 和 `QueryMessages`，不提供消息删除功能。
+
 ## 技术栈
 
 - Vue 3.4

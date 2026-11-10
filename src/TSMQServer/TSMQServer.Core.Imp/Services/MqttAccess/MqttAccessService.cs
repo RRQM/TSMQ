@@ -6,7 +6,7 @@ namespace TSMQServer.Core.Imp.Services;
 
 /// <summary>MQTT 访问控制与排障接口实现。</summary>
 [Authorize, ExceptionFilter, LoggerFilter]
-public sealed class MqttAccessService(MqttAccessManager access, MqttDiagnostics diagnostics, IMqttServerHostService host)
+public sealed class MqttAccessService(MqttAccessManager access, MqttDiagnostics diagnostics, IMqttServerHostService host, MqttPersistenceManager persistence)
     : TransientRpcServer, IMqttAccessService
 {
     /// <inheritdoc/>
@@ -46,8 +46,10 @@ public sealed class MqttAccessService(MqttAccessManager access, MqttDiagnostics 
         try { payload = request.IsBase64 ? Convert.FromBase64String(request.Payload) : Encoding.UTF8.GetBytes(request.Payload); }
         catch (FormatException) { return new ResponseBase().FromFail("Base64 负载无效"); }
         if (payload.Length > 65536) return new ResponseBase().FromFail("消息负载最多 64 KiB");
-        var count = await host.PublishMessageAsync(request.Topic, payload, request.Qos, request.Retain);
         var principal = this.CallContext.GetValue(AuthorizeAttribute.JwtPrincipalProperty);
+        await persistence.RecordAsync(request.Topic, payload, request.Qos, request.Retain, "[console]",
+            principal?.FindFirst(ClaimTypes.Name)?.Value ?? "");
+        var count = await host.PublishMessageAsync(request.Topic, payload, request.Qos, request.Retain);
         diagnostics.Record("DebugPublish", "[console]", principal?.FindFirst(ClaimTypes.Name)?.Value ?? "",
             request.Topic, $"管理端发布，已提交至 {count} 个订阅队列", payload, request.Qos, request.Retain, access.GetPolicy().CapturePayload);
         return new ResponseBase().FromSuccess($"已提交至 {count} 个订阅队列");

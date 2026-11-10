@@ -45,6 +45,9 @@ public static class TSMQServerDbSqliteExtension
         services.AddTransient<IMqttStatsSnapshotFromDB, MqttStatsSnapshotFromDB>();
         services.AddTransient<IBrokerSettingsFromDB, BrokerSettingsFromDB>();
         services.AddTransient<IMqttAccessPolicyFromDB, MqttAccessPolicyFromDB>();
+        var messageStore = new SqliteMqttMessageStore(new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder { DataSource = dbPath }.ToString());
+        messageStore.Initialize();
+        services.AddSingleton<IMqttMessageStore>(messageStore);
     }
 }
 
