@@ -196,6 +196,128 @@ docker run -d \
 
 当前提供单实例 Broker 管理，同一实例内支持多监听器互通；暂不支持集群和 `$share` 共享订阅。
 
+## 基准测试
+
+基准项目位于 `benchmark`，使用 BenchmarkDotNet 对比 MQTTnet 与 TouchSocket 客户端和 Broker。运行全部基准：
+
+```powershell
+cd benchmark
+.\run-benchmarks.ps1
+```
+
+也可使用较短的基准作快速检查，或按 BenchmarkDotNet 筛选用例：
+
+```powershell
+.\run-benchmarks.ps1 -Quick
+.\run-benchmarks.ps1 -Quick -Filter '*ForwardMessages*'
+```
+
+测试矩阵覆盖 TouchSocket、MQTTnet 两种 Broker，1 KiB、4 KiB、8 KiB 消息负载，QoS 0/1/2，以及 MQTT 3.1.1 和 5.0。客户端发布基准由两种客户端分别连续发布 1,000 条消息；Broker 转发基准使用 MQTTnet 客户端发布，并等待订阅端收到和校验全部 1,000 条消息。完整矩阵共 108 个用例：客户端发布 72 个，Broker 转发 36 个。结果文件写入 `benchmark\BenchmarkDotNet.Artifacts\results`。
+
+### 最近一次报告
+
+报告生成于 2026-11-11，测试环境为 Windows 11、Intel Core i7-13700、.NET SDK 11.0.100，基准运行时为 .NET 10.0.15；BenchmarkDotNet 版本为 0.15.8。完整运行耗时约 21 分 18 秒，执行了 108 个用例。
+
+以下按 QoS 等级列出全部参数组合。每个单元格依次为**平均耗时 / 托管内存分配量**，均对应一次处理 1,000 条消息的基准操作；KB、MB 沿用报告单位。客户端发布表记录发布调用耗时，Broker 转发表还包含等待订阅端接收及校验的时间，两类基准的耗时应分别比较。
+
+#### QoS 0（AtMostOnce）
+
+**客户端连续发布 1,000 条消息**
+
+| Broker | 负载 | MQTT 版本 | TouchSocket 客户端：耗时 / 分配量 | MQTTnet 客户端：耗时 / 分配量 |
+| --- | --- | --- | ---: | ---: |
+| TouchSocket | 1 KiB | 3.1.1 | 2.664 ms / 230.33 KB | 25.100 ms / 687.65 KB |
+| TouchSocket | 1 KiB | 5.0 | 2.844 ms / 376.82 KB | 26.009 ms / 687.53 KB |
+| TouchSocket | 4 KiB | 3.1.1 | 4.150 ms / 502.59 KB | 26.744 ms / 687.57 KB |
+| TouchSocket | 4 KiB | 5.0 | 4.091 ms / 1144 KB | 28.968 ms / 664.79 KB |
+| TouchSocket | 8 KiB | 3.1.1 | 7.045 ms / 516.99 KB | 28.313 ms / 664.3 KB |
+| TouchSocket | 8 KiB | 5.0 | 7.216 ms / 516.78 KB | 28.814 ms / 664.3 KB |
+| MQTTnet | 1 KiB | 3.1.1 | 3.669 ms / 1074 KB | 23.309 ms / 3588.04 KB |
+| MQTTnet | 1 KiB | 5.0 | 3.793 ms / 1212.36 KB | 25.540 ms / 3580.53 KB |
+| MQTTnet | 4 KiB | 3.1.1 | 5.877 ms / 7519.11 KB | 26.181 ms / 9569.93 KB |
+| MQTTnet | 4 KiB | 5.0 | 5.611 ms / 7415.19 KB | 26.260 ms / 9424.49 KB |
+| MQTTnet | 8 KiB | 3.1.1 | 8.181 ms / 15803.93 KB | 25.614 ms / 17630.8 KB |
+| MQTTnet | 8 KiB | 5.0 | 7.646 ms / 15535.47 KB | 25.998 ms / 17498.8 KB |
+
+**Broker 转发并校验 1,000 条消息**（发布端和订阅端均使用 MQTTnet 客户端）
+
+| 负载 | MQTT 版本 | TouchSocket Broker：耗时 / 分配量 | MQTTnet Broker：耗时 / 分配量 |
+| --- | --- | ---: | ---: |
+| 1 KiB | 3.1.1 | 30.66 ms / 5.18 MB | 43.80 ms / 7.89 MB |
+| 1 KiB | 5.0 | 30.68 ms / 5.18 MB | 35.78 ms / 7.82 MB |
+| 4 KiB | 3.1.1 | 30.82 ms / 11.54 MB | 44.80 ms / 19.65 MB |
+| 4 KiB | 5.0 | 31.48 ms / 11.19 MB | 45.27 ms / 19.59 MB |
+| 8 KiB | 3.1.1 | 31.10 ms / 19.01 MB | 67.18 ms / 35.44 MB |
+| 8 KiB | 5.0 | 31.92 ms / 19 MB | 46.12 ms / 35.39 MB |
+
+#### QoS 1（AtLeastOnce）
+
+**客户端连续发布 1,000 条消息**
+
+| Broker | 负载 | MQTT 版本 | TouchSocket 客户端：耗时 / 分配量 | MQTTnet 客户端：耗时 / 分配量 |
+| --- | --- | --- | ---: | ---: |
+| TouchSocket | 1 KiB | 3.1.1 | 67.255 ms / 915.1 KB | 87.737 ms / 2302.27 KB |
+| TouchSocket | 1 KiB | 5.0 | 64.126 ms / 915.1 KB | 89.467 ms / 2303.54 KB |
+| TouchSocket | 4 KiB | 3.1.1 | 79.275 ms / 914.92 KB | 101.248 ms / 2305.56 KB |
+| TouchSocket | 4 KiB | 5.0 | 81.692 ms / 914.92 KB | 110.243 ms / 2305.04 KB |
+| TouchSocket | 8 KiB | 3.1.1 | 73.341 ms / 914.92 KB | 95.312 ms / 2302.47 KB |
+| TouchSocket | 8 KiB | 5.0 | 95.357 ms / 914.92 KB | 92.639 ms / 2302.82 KB |
+| MQTTnet | 1 KiB | 3.1.1 | 70.494 ms / 4305 KB | 92.821 ms / 5764.1 KB |
+| MQTTnet | 1 KiB | 5.0 | 67.445 ms / 4304.98 KB | 90.893 ms / 5801.3 KB |
+| MQTTnet | 4 KiB | 3.1.1 | 80.635 ms / 10376.11 KB | 91.738 ms / 11761.27 KB |
+| MQTTnet | 4 KiB | 5.0 | 77.612 ms / 10375.22 KB | 84.007 ms / 11732.45 KB |
+| MQTTnet | 8 KiB | 3.1.1 | 75.027 ms / 18445.53 KB | 87.900 ms / 19868.19 KB |
+| MQTTnet | 8 KiB | 5.0 | 78.308 ms / 18446.17 KB | 88.014 ms / 19720.53 KB |
+
+**Broker 转发并校验 1,000 条消息**（发布端和订阅端均使用 MQTTnet 客户端）
+
+| 负载 | MQTT 版本 | TouchSocket Broker：耗时 / 分配量 | MQTTnet Broker：耗时 / 分配量 |
+| --- | --- | ---: | ---: |
+| 1 KiB | 3.1.1 | 58.54 ms / 7.43 MB | 101.56 ms / 11.09 MB |
+| 1 KiB | 5.0 | 57.54 ms / 7.53 MB | 97.37 ms / 11.09 MB |
+| 4 KiB | 3.1.1 | 54.62 ms / 13.23 MB | 96.90 ms / 22.81 MB |
+| 4 KiB | 5.0 | 57.10 ms / 13.22 MB | 112.52 ms / 22.81 MB |
+| 8 KiB | 3.1.1 | 364.14 ms / 20.84 MB | 124.67 ms / 38.54 MB |
+| 8 KiB | 5.0 | 184.09 ms / 21.1 MB | 130.22 ms / 38.53 MB |
+
+#### QoS 2（ExactlyOnce）
+
+**客户端连续发布 1,000 条消息**
+
+| Broker | 负载 | MQTT 版本 | TouchSocket 客户端：耗时 / 分配量 | MQTTnet 客户端：耗时 / 分配量 |
+| --- | --- | --- | ---: | ---: |
+| TouchSocket | 1 KiB | 3.1.1 | 159.861 ms / 1485.41 KB | 192.828 ms / 4117.66 KB |
+| TouchSocket | 1 KiB | 5.0 | 161.391 ms / 1485.41 KB | 205.484 ms / 4117.61 KB |
+| TouchSocket | 4 KiB | 3.1.1 | 180.784 ms / 1654.17 KB | 215.995 ms / 4117.52 KB |
+| TouchSocket | 4 KiB | 5.0 | 183.283 ms / 1722.24 KB | 211.956 ms / 4257.68 KB |
+| TouchSocket | 8 KiB | 3.1.1 | 189.221 ms / 1485.23 KB | 217.872 ms / 4117.24 KB |
+| TouchSocket | 8 KiB | 5.0 | 160.766 ms / 1485.41 KB | 204.893 ms / 4116.34 KB |
+| MQTTnet | 1 KiB | 3.1.1 | 141.766 ms / 5937.79 KB | 171.319 ms / 8582.71 KB |
+| MQTTnet | 1 KiB | 5.0 | 156.884 ms / 5937.17 KB | 172.081 ms / 8661.34 KB |
+| MQTTnet | 4 KiB | 3.1.1 | 158.687 ms / 12008.58 KB | 176.353 ms / 14605.74 KB |
+| MQTTnet | 4 KiB | 5.0 | 142.908 ms / 12008.13 KB | 166.882 ms / 14506.61 KB |
+| MQTTnet | 8 KiB | 3.1.1 | 159.051 ms / 20078.14 KB | 171.849 ms / 22547.3 KB |
+| MQTTnet | 8 KiB | 5.0 | 151.894 ms / 20078.14 KB | 168.812 ms / 22737.48 KB |
+
+**Broker 转发并校验 1,000 条消息**（发布端和订阅端均使用 MQTTnet 客户端）
+
+| 负载 | MQTT 版本 | TouchSocket Broker：耗时 / 分配量 | MQTTnet Broker：耗时 / 分配量 |
+| --- | --- | ---: | ---: |
+| 1 KiB | 3.1.1 | 85.71 ms / 10.3 MB | 185.36 ms / 15.92 MB |
+| 1 KiB | 5.0 | 85.58 ms / 10.19 MB | 184.93 ms / 15.98 MB |
+| 4 KiB | 3.1.1 | 88.71 ms / 16.12 MB | 184.42 ms / 27.57 MB |
+| 4 KiB | 5.0 | 89.70 ms / 16.12 MB | 187.01 ms / 27.75 MB |
+| 8 KiB | 3.1.1 | 260.04 ms / 24.02 MB | 217.92 ms / 43.34 MB |
+| 8 KiB | 5.0 | 488.15 ms / 24 MB | 205.18 ms / 43.24 MB |
+
+### 测试结论
+
+- **客户端发布：** TouchSocket 客户端在 QoS 0 的全部 12 组同条件比较中平均耗时更低，MQTTnet 与 TouchSocket 的耗时比为 3.13–9.42；QoS 1 有 11/12 组平均耗时更低，QoS 2 为 12/12 组。托管内存分配量在全部 36 组比较中的 35 组更低；例外为 TouchSocket Broker、4 KiB、MQTT 5.0、QoS 0。
+- **Broker 转发：** TouchSocket 在 QoS 0 的全部 6 组中平均耗时更低；QoS 1 和 QoS 2 在 1 KiB、4 KiB 下的各 4 组也更低，但在 8 KiB 下的各 2 组均高于 MQTTnet。TouchSocket Broker 在全部 18 组同条件比较中的托管内存分配量均更低。
+- **大负载与波动：** TouchSocket Broker 在 8 KiB、QoS 1、MQTT 3.1.1 下为 364.14 ms，标准差 260.760 ms；8 KiB、QoS 2、MQTT 5.0 下为 488.15 ms，标准差 238.879 ms。这些组合存在较大波动，需要复测并定位，不能据此认为某一实现对所有负载都有优势。
+
+本轮结果表明，TouchSocket 客户端的 QoS 0 发布耗时优势明显，TouchSocket Broker 在 1–4 KiB 消息转发中同时具有较低的平均耗时和分配量；8 KiB、QoS 1/2 的转发耗时与稳定性仍有改进空间。基准直接启动两种 Broker，未包含 TSMQ 的 Web 管理、访问控制及 SQLite 持久化链路，实际部署性能还需结合业务配置评估。
+
 ## 相关链接
 
 [发布下载](https://github.com/RRQM/TSMQ/releases) · [问题反馈](https://github.com/RRQM/TSMQ/issues) · [TouchSocket 官网](https://touchsocket.net/) · [TouchSocket 仓库](https://github.com/RRQM/TouchSocket)
